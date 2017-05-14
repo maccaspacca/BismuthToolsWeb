@@ -15,13 +15,14 @@ Notes:
 1. In order to take into account the use of Hyperblocks technology the query components are only designed to use blocks since the latest hyperblock in your ledger.
 
 Requirements
+============
 
 Windows
 =======
 
 1. Windows 7 or better
 2. Bismuth cryptocurrency installed via the latest installation executable at https://github.com/hclivess/bismuth/releases or run from source
-3. The latest executable from releases https://github.com/maccaspacca/BismuthTools/releases use "bismuthtools.exe" for desktop or "bismuthtoolsweb.exe" if you want to access from a browser (localhost:8080)
+3. The latest executable from releases https://github.com/maccaspacca/BismuthToolsWeb/releases use "bismuthtoolsweb.exe" and access from a browser (localhost:8080)
 
 Run from source
 1. Python 2.7 and dependencies as detailed at https://bitcointalk.org/index.php?topic=1525078
@@ -46,7 +47,7 @@ The application will detect your OS and set the location of your local ledger.db
 
 It is assumed that your ledger.db is located at C:\Program Files (x86)\Bismuth\static in Windows and ~/home/Bismuth/static in respect of linux and variants.
 
-The windows installer executable will create the tools folder for you on your desktop called "toolsweb"
+The windows installer executable will create the tools folder for you on at "c:\toolsweb"
 
 tools.db
 =========
