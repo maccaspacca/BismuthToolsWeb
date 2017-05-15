@@ -247,8 +247,8 @@ def getvars(myaddress):
 	c.execute("SELECT timestamp FROM transactions WHERE block_height = ?;",(str(b_min),))
 	t_min = c.fetchone()[0]	
 
-	t_min = str(time.strftime("at %H:%M:%S on %d/%m/%Y", time.localtime(float(t_min))))
-	t_max = str(time.strftime("at %H:%M:%S on %d/%m/%Y", time.localtime(float(t_max))))
+	t_min = str(time.strftime("at %H:%M:%S on %d/%m/%Y", time.gmtime(float(t_min))))
+	t_max = str(time.strftime("at %H:%M:%S on %d/%m/%Y", time.gmtime(float(t_max))))
 	
 	c.close()
 	conn.close()
@@ -282,8 +282,8 @@ def refresh(testAddress):
 		c.execute("SELECT timestamp FROM transactions WHERE block_height = ?;",(str(b_min),))
 		t_min = c.fetchone()[0]	
 
-		t_min = str(time.strftime("at %H:%M:%S on %d/%m/%Y", time.localtime(float(t_min))))
-		t_max = str(time.strftime("at %H:%M:%S on %d/%m/%Y", time.localtime(float(t_max))))
+		t_min = str(time.strftime("at %H:%M:%S on %d/%m/%Y", time.gmtime(float(t_min))))
+		t_max = str(time.strftime("at %H:%M:%S on %d/%m/%Y", time.gmtime(float(t_max))))
 	else:
 		b_count = 0
 		t_min = 0
@@ -648,7 +648,7 @@ class index:
 				color_cell = "white"
 			thisview.append('<tr bgcolor ="{}">'.format(color_cell))
 			thisview.append('<td>{}</td>'.format(str(x[0])))
-			thisview.append('<td>{}'.format(str(time.strftime("%Y/%m/%d,%H:%M:%S", time.localtime(float(x[1]))))))
+			thisview.append('<td>{}'.format(str(time.strftime("%Y/%m/%d,%H:%M:%S", time.gmtime(float(x[1]))))))
 			thisview.append('<td>{}</td>'.format(str(x[2])))
 			thisview.append('<td>{}</td>'.format(str(x[3].encode('utf-8'))))
 			thisview.append('<td>{}</td>'.format(str(x[4])))
@@ -906,7 +906,7 @@ class ledgerquery:
 				color_cell = "white"
 			view.append('<tr bgcolor ="{}">'.format(color_cell))
 			view.append('<td>{}</td>'.format(str(x[0])))
-			view.append('<td>{}'.format(str(time.strftime("%Y/%m/%d,%H:%M:%S", time.localtime(float(x[1]))))))
+			view.append('<td>{}'.format(str(time.strftime("%Y/%m/%d,%H:%M:%S", time.gmtime(float(x[1]))))))
 			view.append('<td>{}</td>'.format(str(x[2])))
 			view.append('<td>{}</td>'.format(str(x[3].encode('utf-8'))))
 			view.append('<td>{}</td>'.format(str(x[4])))
