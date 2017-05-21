@@ -347,7 +347,7 @@ def updatedb():
 
 	for dudes in mysponsors:
 
-		dud = dudes[11].split("=")
+		dud = dudes[11].split("sponsor=")
 		try:
 			temp_block = dudes[0]
 			temp_paid = float(dudes[4])
