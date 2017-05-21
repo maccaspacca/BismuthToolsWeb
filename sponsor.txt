@@ -1,4 +1,0 @@
-[My Sponsors]
-address = da32fa64be3205bd2968395282b73db3a7a25ad1115fa6850542cd0c
-sponsors = 1
-rate = 1000

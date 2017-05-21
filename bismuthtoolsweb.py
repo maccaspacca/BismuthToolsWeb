@@ -1,5 +1,6 @@
 # Bismuth Tools Web Edition
-# version 2.00
+# Version 201
+# Date 21/05/2017
 # Copyright Maccaspacca 2017
 # Copyright Hclivess 2016 to 2017
 # Author Maccaspacca
@@ -21,16 +22,35 @@ import platform
 
 global my_os
 global bis_root
+global myaddress
+global myrate
+global mysponsor
+
+config = ConfigParser.ConfigParser()
+config.readfp(open(r'toolsconfig.ini'))
+logging.info("Reading config file.....")
+mysponsor = int(config.get('My Sponsors', 'sponsors'))
+myaddress = config.get('My Sponsors', 'address')
+myrate = float(config.get('My Sponsors', 'rate'))
+bis_root = config.get('My Bismuth', 'dbpath')
+logging.info("Config file read completed")
+
+if mysponsor == 1:
+	mysponsor = True
+else:
+	mysponsor = False
 
 my_os = platform.system()
 my_os = my_os.lower()
 
 if "linux" in my_os:
-	bis_root = os.path.expanduser('~/Bismuth/static/ledger.db')
+	bis_root = os.path.expanduser('{}'.format(bis_root))
 elif "windows" in my_os:
-	bis_root = "C:\Program Files (x86)\Bismuth\static\ledger.db"
+	pass
 else: # if its not windows then probably a linux or unix variant
-	bis_root = os.path.expanduser('~/Bismuth/static/ledger.db')
+	pass
+
+print("Bismuth path = {}".format(bis_root))
 
 logging.basicConfig(level=logging.INFO, 
                     filename='toolsdb.log', # log to this file
@@ -38,22 +58,6 @@ logging.basicConfig(level=logging.INFO,
 
 logging.info("logging initiated")
 
-global myaddress
-global myrate
-global mysponsor
-
-config = ConfigParser.ConfigParser()
-config.readfp(open(r'sponsor.txt'))
-logging.info("Reading config file.....")
-mysponsor = int(config.get('My Sponsors', 'sponsors'))
-myaddress = config.get('My Sponsors', 'address')
-myrate = float(config.get('My Sponsors', 'rate'))
-logging.info("Config file read completed")
-
-if mysponsor == 1:
-	mysponsor = True
-else:
-	mysponsor = False
 	
 def latest():
 
@@ -93,6 +97,7 @@ def latest():
 def getmeta(this_url):
 # This module attempts to get Open Graph information for the sponsor site_name
 # If this fails it attempts to use the "name" property before just filling the info with the url
+	#print this_url
 
 	this_property = ("og:title","og:image","og:url","og:description","og:site_name")
 	oginfo = []
@@ -115,7 +120,7 @@ def getmeta(this_url):
 			else:
 				oginfo.append("")
 
-	#print oginfo
+	#print(oginfo)
 	return oginfo
 
 def i_am_first(my_first,the_address):
@@ -130,7 +135,7 @@ def i_am_first(my_first,the_address):
 	c.close()
 	conn.close()
 	
-	#print str(the_address) + " | " + str(test_me)
+	#print(str(the_address) + " | " + str(test_me))
 	
 	if the_address == test_me:
 		return True
@@ -140,10 +145,11 @@ def i_am_first(my_first,the_address):
 # check miner address for a nickname
 
 def checkmyname(myaddress):
+
 	conn = sqlite3.connect(bis_root)
 	conn.text_factory = str
 	c = conn.cursor()
-	c.execute("SELECT * FROM transactions WHERE address = ? AND recipient = ? AND amount > ? ORDER BY block_height ASC;",(myaddress,myaddress,"1"))
+	c.execute("SELECT * FROM transactions WHERE address = ? AND recipient = ? AND amount > ? AND openfield LIKE 'Minername=%' ORDER BY block_height ASC;",(myaddress,myaddress,"1"))
 	namelist = c.fetchall()
 	c.close()
 	conn.close()
@@ -152,37 +158,23 @@ def checkmyname(myaddress):
 
 	for x in namelist:
 		tempfield = str(x[11])
-		newfield = ""
 		
-		if tempfield == "reward" or "":
-			goodname = ""
+		if i_am_first(tempfield,x[2]):
+			duff = tempfield.split("=")
+			goodname = str(duff[1])
 		else:
-			try:
-				newfield = base64.b64decode(tempfield)
-			except:
-				pass
-			if "Minername=" in newfield:
-				if i_am_first(base64.b64encode(newfield),x[2]):
-					duff = newfield.split("=")
-					goodname = str(duff[1])
-				else:
-					goodname = ""
-			if "Minername=" in tempfield:
-				if i_am_first(tempfield,x[2]):
-					duff = tempfield.split("=")
-					goodname = str(duff[1])
-				else:
-					goodname = ""
+			goodname = ""
 
 	logging.info("Tools DB: Check miner name result: Address {} = {}".format(str(myaddress),goodname))
 		
 	return goodname
 	
 def checkalias(myaddress):
+
 	conn = sqlite3.connect(bis_root)
 	conn.text_factory = str
 	c = conn.cursor()
-	c.execute("SELECT * FROM transactions WHERE address = ? AND recipient = ? AND fee != 0 ORDER BY block_height ASC;",(myaddress,myaddress))
+	c.execute("SELECT * FROM transactions WHERE address = ? AND recipient = ? AND fee != 0  AND openfield LIKE 'alias=%' ORDER BY block_height ASC;",(myaddress,myaddress))
 	namelist = c.fetchall()
 	c.close()
 	conn.close()
@@ -205,58 +197,10 @@ def checkalias(myaddress):
 
 	return goodname
 	
-# check miner address for zero transactions
-
-def zerocheck(zeroaddress):
-	
-	conn = sqlite3.connect(bis_root)
-	conn.text_factory = str
-	c = conn.cursor()
-	c.execute("SELECT count(*) FROM transactions WHERE address = ? AND (reward != 0);",(zeroaddress,))
-	this_count = c.fetchone()[0]
-	c.close()
-	conn.close()
-	
-	logging.info("Tools DB: Checked miner for zero transactions: {}".format(zeroaddress))
-	
-	if this_count > 0:
-		return False
-	else:
-		return True
-
-# get and process miner information	
-
-def getvars(myaddress):
-
-	# print myaddress
-
-	conn = sqlite3.connect(bis_root)
-	conn.text_factory = str
-	c = conn.cursor()
-	
-	c.execute("SELECT sum(reward) FROM transactions WHERE address = ?;",(myaddress,))
-	r_sum = c.fetchone()[0]
-	c.execute("SELECT count(*) FROM transactions WHERE address = ? AND (reward != 0);",(myaddress,))
-	b_count = c.fetchone()[0]
-	c.execute("SELECT MAX(block_height) FROM transactions WHERE recipient = ? AND (reward !=0);",(myaddress,))
-	b_max = c.fetchone()[0]
-	c.execute("SELECT MIN(block_height) FROM transactions WHERE block_height BETWEEN ? and ? AND recipient = ?;",(hyper_limit,b_max,myaddress))
-	b_min = c.fetchone()[0]
-	c.execute("SELECT timestamp FROM transactions WHERE block_height = ?;",(str(b_max),))
-	t_max = c.fetchone()[0]
-	c.execute("SELECT timestamp FROM transactions WHERE block_height = ?;",(str(b_min),))
-	t_min = c.fetchone()[0]	
-
-	t_min = str(time.strftime("at %H:%M:%S on %d/%m/%Y", time.gmtime(float(t_min))))
-	t_max = str(time.strftime("at %H:%M:%S on %d/%m/%Y", time.gmtime(float(t_max))))
-	
-	c.close()
-	conn.close()
-	
-	return t_max, t_min, b_count, r_sum # latest block, first block, blocks found, total rewards
+# get and process address information	
 
 def refresh(testAddress):
-	
+
 	conn = sqlite3.connect(bis_root)
 	conn.text_factory = str
 	c = conn.cursor()
@@ -269,18 +213,13 @@ def refresh(testAddress):
 	fees = tester[0][1]
 	rewards = tester[0][2]
 	
-	if rewards > 0:
-		
+	if rewards > 0:		
 		c.execute("SELECT count(*) FROM transactions WHERE address = ? AND (reward != 0);",(testAddress,))
 		b_count = c.fetchone()[0]
-		c.execute("SELECT MAX(block_height) FROM transactions WHERE recipient = ? AND (reward !=0);",(testAddress,))
-		b_max = c.fetchone()[0]
-		c.execute("SELECT MIN(block_height) FROM transactions WHERE block_height BETWEEN ? and ? AND recipient = ? AND (reward != 0);",(hyper_limit,b_max,testAddress))
-		b_min = c.fetchone()[0]
-		c.execute("SELECT timestamp FROM transactions WHERE block_height = ?;",(str(b_max),))
+		c.execute("SELECT MAX(timestamp) FROM transactions WHERE recipient = ? AND (reward !=0);",(testAddress,))
 		t_max = c.fetchone()[0]
-		c.execute("SELECT timestamp FROM transactions WHERE block_height = ?;",(str(b_min),))
-		t_min = c.fetchone()[0]	
+		c.execute("SELECT MIN(timestamp) FROM transactions WHERE recipient = ? AND (reward !=0);",(testAddress,))
+		t_min = c.fetchone()[0]
 
 		t_min = str(time.strftime("at %H:%M:%S on %d/%m/%Y", time.gmtime(float(t_min))))
 		t_max = str(time.strftime("at %H:%M:%S on %d/%m/%Y", time.gmtime(float(t_max))))
@@ -289,26 +228,27 @@ def refresh(testAddress):
 		t_min = 0
 		t_max = 0
 	
-
-	if debit == None:
+	if not debit:
 		debit = 0
-	if fees == None:
+	if not fees:
 		fees = 0
-	if rewards == None:
+	if not rewards:
 		rewards = 0
-	if credit == None:
+	if not credit:
 		credit = 0
 	balance = (credit + rewards) - (debit + fees)
 	
 	c.close()
 	conn.close()
-
-	return str(credit),str(debit),str(rewards),str(fees),str(balance),t_max, t_min, b_count	
+	
+	get_stuff = [str(credit),str(debit),str(rewards),str(fees),str(balance),t_max, t_min, b_count]
+		
+	return get_stuff	
 
 
 def updatedb():
 
-	print "Updating database.....wait"
+	print("Updating database.....wait")
 	
 	if os.path.isfile('temptools.db'):
 		os.remove('temptools.db')
@@ -344,6 +284,7 @@ def updatedb():
 	conn.close()
 
 	the_sponsors = []
+	#print mysponsors
 
 	for dudes in mysponsors:
 
@@ -377,12 +318,12 @@ def updatedb():
 
 # rich and miner lists ///////////////////////////////////////
 
-	all = []
+	r_all = []
 
 	ronn = sqlite3.connect(bis_root)
 	r = ronn.cursor()
 	r.execute("SELECT distinct recipient FROM transactions WHERE amount !=0 OR reward !=0;")
-	all = r.fetchall()
+	r_all = r.fetchall()
 	r.close()
 	ronn.close()
 	
@@ -390,20 +331,19 @@ def updatedb():
 	
 	m.execute("begin")
 	
-	for x in all:
+	for x in r_all:
 	
 		btemp = refresh(str(x[0]))
 		m_alias = checkalias(str(x[0]))
-		print str(x[0])
-		#print m_alias
+		print(str(x[0]))
+		#print(m_alias)
 		m.execute('INSERT INTO richlist VALUES (?,?,?)', (x[0],btemp[4],m_alias))
 
 		if float(btemp[2]) > 0:
 			temp_miner = str(x[0])
 			if len(temp_miner) == 56:
-				if not zerocheck(temp_miner):
-					m_name = checkmyname(temp_miner)
-					m.execute('INSERT INTO minerlist VALUES (?,?,?,?,?,?)', (temp_miner, btemp[5], btemp[6], btemp[7], btemp[2], m_name))
+				m_name = checkmyname(temp_miner)
+				m.execute('INSERT INTO minerlist VALUES (?,?,?,?,?,?)', (temp_miner, btemp[5], btemp[6], btemp[7], btemp[2], m_name))
 	m.execute("commit")
 	tools.commit()
 	m.close()
@@ -425,7 +365,7 @@ def buildtoolsdb():
 	
 	while bobble:
 		logging.info("Tools DB: Waiting for 30 minutes.......")
-		print "Tools DB: Waiting for 30 minutes......."
+		print("Tools DB: Waiting for 30 minutes.......")
 		time.sleep(1800)
 		bobble = updatedb()
 
@@ -465,8 +405,17 @@ def getcirc():
 	c.execute("SELECT sum(amount) FROM transactions WHERE address = 'Development Reward';")
 	
 	alldev = c.fetchone()[0]
+
+	c.execute("SELECT sum(amount) FROM transactions WHERE address = 'Hyperblock';")
 	
-	allcirc = float(allcirc) + float(alldev)
+	allhyp = c.fetchone()[0]
+	
+	if not allhyp:
+		allhyp = 0
+	if not alldev:
+		alldev = 0
+
+	allcirc = float(allcirc) + float(alldev) + float(allhyp)
 
 	c.close()
 	conn.close()	
@@ -601,6 +550,16 @@ def my_head(bo):
 	mhead.append('.btn-link{border:none;outline:none;background:none;cursor:pointer;color:#0000EE;padding:0;text-decoration:underline;font-family:inherit;font-size:inherit;}\n')
 	mhead.append(bo + '\n')
 	mhead.append('</style>\n')
+	mhead.append('<meta property="og:type" content="website" />\n')
+	mhead.append('<meta property="og:title" content="Bismuth Tools Web Edition" />\n')
+	mhead.append('<meta property="og:description" content="In the truly free world, there are no limits" />\n')
+	mhead.append('<meta property="og:url" content="http://bismuth.cz/" />\n')
+	mhead.append('<meta property="og:site_name" content="Bismuth Tools" />\n')
+	mhead.append('<meta property="og:image" content="https://i1.wp.com/bismuth.cz/wp-content/uploads/2017/03/cropped-mesh2-2.png?fit=200%2C200" />\n')
+	mhead.append('<meta property="og:image:width" content="200" />\n')
+	mhead.append('<meta property="og:image:height" content="200" />\n')
+	mhead.append('<meta property="og:locale" content="en_US" />\n')
+	mhead.append('<meta property="xbm:version" content="201" />\n')
 	mhead.append('<title>Bismuth Tools</title>\n')
 	mhead.append('</head>\n')
 	mhead.append('<body background="static/explorer_bg.png">\n')
@@ -718,7 +677,7 @@ class minerquery:
 		elif getaddress == "myaddy":
 			addressis = ""
 		else:
-			#print "Info requested: " + getaddress
+			#print("Info requested: " + getaddress)
 			m_info = bgetvars(getaddress)
 			addressis = "<table style='width:50%;'>"
 			addressis = addressis + "<tr><td align='right' bgcolor='#DAF7A6'><b>Address:</b></td><td bgcolor='#D0F7C3'>{}</td></tr>".format(str(m_info[0]))
@@ -820,7 +779,7 @@ class ledgerquery:
 		
 		if not myblock.isalnum():
 			myblock = "0"
-			#print "has dodgy characters but now fixed"
+			#print("has dodgy characters but now fixed")
 		
 		my_type = test(myblock)
 		
@@ -875,7 +834,7 @@ class ledgerquery:
 				c.execute("SELECT * FROM transactions WHERE block_height = ?;", (myblock,))
 
 				all = c.fetchall()
-				#print all
+				#print(all)
 				
 				c.close()
 				conn.close()

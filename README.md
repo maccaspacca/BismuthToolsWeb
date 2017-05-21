@@ -43,9 +43,7 @@ File placement
 
 The files can be placed on your desktop, in your home folder etc. depending on your OS, in a folder of your choosing.
 
-The application will detect your OS and set the location of your local ledger.db file. 
-
-It is assumed that your ledger.db is located at C:\Program Files (x86)\Bismuth\static in Windows and ~/home/Bismuth/static in respect of linux and variants.
+The location of your ledger.db file must be set in the toolsconfig.ini file before running. Follow the comments in the file.
 
 The windows installer executable will create the tools folder for you on at "c:\toolsweb"
 
@@ -59,7 +57,7 @@ This database is used to store sponsor, miner and richlist information and is up
 Sponsors
 ========
 
-Edit the sponsor.txt file as follows:
+Edit the toolsconfig.ini file as follows:
 
 address = <insert your the Bismuth address that will receive your payment>
 
@@ -71,6 +69,16 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 
 Changes
 =======
+
+Version 2.0.1 21/05/2017
+------------------------
+
+1. Path to database location configured in new toolsconfig.ini file
+2. Sponsor information moved to new toolsconfig.ini file
+3. Fix compatibility with hyperblock enabled ledger.db
+4. Fix sponsor url parsing error
+5. Confirm pull request to use GMT time for display of timestamps
+6. Remove old code and tidy up
 
 Version 2.0.0 14/05/2017
 ------------------------
@@ -86,3 +94,6 @@ Future Improvements:
 1. Other Ledger Information page: to list hyperblock and query "keep" transactions
 2. Network information page
 3. Look and feel improvements
+4. Pyhton 3.x compatibility
+5. Move sponsors from local definition to blockchain with payments shared between those hosting webtools
+
