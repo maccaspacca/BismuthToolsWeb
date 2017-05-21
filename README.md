@@ -59,9 +59,9 @@ Sponsors
 
 Edit the toolsconfig.ini file as follows:
 
-address = <insert your the Bismuth address that will receive your payment>
+address = insert your the Bismuth address that will receive your payment
 
-sponsors = <insert 1 to switch on sponsors or 0 to switch off>
+sponsors = insert 1 to switch on sponsors or 0 to switch off
 
 rate = <insert the number of blocks per Bismuth the sponsor advert will be displayed for>
 
