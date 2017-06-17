@@ -63,12 +63,19 @@ address = insert your the Bismuth address that will receive your payment
 
 sponsors = insert 1 to switch on sponsors or 0 to switch off
 
-rate = <insert the number of blocks per Bismuth the sponsor advert will be displayed for>
+rate = insert the number of blocks per Bismuth the sponsor advert will be displayed for
 
 There are two sponsor spots on the main web landing page of the tools and a sponsor will be picked randomly from your sponsorlist.
 
 Changes
 =======
+
+Version 2.0.2 17/06/2017
+------------------------
+
+1. Tools database now updated using a copy of ledger.db placed in RAM
+2. OG and other meta information now configured in toolsconfig.ini file
+3. Minor fixes, typos and updates
 
 Version 2.0.1 21/05/2017
 ------------------------

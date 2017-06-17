@@ -1,11 +1,12 @@
 # Bismuth Tools Web Edition
-# Version 201
-# Date 21/05/2017
+# Version 202
+# Date 17/06/2017
 # Copyright Maccaspacca 2017
 # Copyright Hclivess 2016 to 2017
 # Author Maccaspacca
 
 import web
+web.config.debug = False
 import sqlite3
 import time
 import re
@@ -26,6 +27,12 @@ global myaddress
 global myrate
 global mysponsor
 
+logging.basicConfig(level=logging.INFO, 
+                    filename='toolsdb.log', # log to this file
+                    format='%(asctime)s %(message)s') # include timestamp
+
+logging.info("logging initiated")
+
 config = ConfigParser.ConfigParser()
 config.readfp(open(r'toolsconfig.ini'))
 logging.info("Reading config file.....")
@@ -34,6 +41,7 @@ myaddress = config.get('My Sponsors', 'address')
 myrate = float(config.get('My Sponsors', 'rate'))
 bis_root = config.get('My Bismuth', 'dbpath')
 logging.info("Config file read completed")
+config = None
 
 if mysponsor == 1:
 	mysponsor = True
@@ -52,19 +60,45 @@ else: # if its not windows then probably a linux or unix variant
 
 print("Bismuth path = {}".format(bis_root))
 
-logging.basicConfig(level=logging.INFO, 
-                    filename='toolsdb.log', # log to this file
-                    format='%(asctime)s %(message)s') # include timestamp
+def dbtoram():
 
-logging.info("logging initiated")
+	global new_db
 
+	new_db = sqlite3.connect(':memory:') # create a memory database
+
+	old_db = sqlite3.connect(bis_root)
+
+	query = "".join(line for line in old_db.iterdump())
+
+	# Dump old database in the new one. 
+	new_db.executescript(query)
+
+	logging.info("ledger.db has been read to RAM.....")
+
+def myoginfo():
+
+	doda = []
+	doconfig = ConfigParser.ConfigParser()
+	doconfig.readfp(open(r'toolsconfig.ini'))
+	logging.info("Reading config file.....")
+	doda.append(doconfig.get('My Oginfo', 'og_title'))
+	doda.append(doconfig.get('My Oginfo', 'og_description'))
+	doda.append(doconfig.get('My Oginfo', 'og_url'))
+	doda.append(doconfig.get('My Oginfo', 'og_site_name'))
+	doda.append(doconfig.get('My Oginfo', 'og_image'))
+
+	logging.info("Config file read completed")
+	
+	doconfig = None
+	
+	return doda
 	
 def latest():
 
 	conn = sqlite3.connect(bis_root)
 	conn.text_factory = str
 	c = conn.cursor()
-	c.execute("SELECT * FROM transactions WHERE reward != ? ORDER BY block_height DESC LIMIT 1;", ('0',)) #or it takes the first
+	c.execute("SELECT * FROM transactions WHERE reward != 0 ORDER BY block_height DESC LIMIT 1;") #or it takes the first
 	result = c.fetchall()
 	c.close()
 	conn.close()
@@ -125,15 +159,12 @@ def getmeta(this_url):
 
 def i_am_first(my_first,the_address):
 
-	conn = sqlite3.connect(bis_root)
-	conn.text_factory = str
-	c = conn.cursor()
+	c = new_db.cursor()
 	c.execute("SELECT MIN(block_height) FROM transactions WHERE openfield = ?;",(my_first,))
 	test_min = c.fetchone()[0]
 	c.execute("SELECT * FROM transactions WHERE block_height = ? and openfield = ?;",(test_min,my_first))
 	test_me = c.fetchone()[2]
 	c.close()
-	conn.close()
 	
 	#print(str(the_address) + " | " + str(test_me))
 	
@@ -146,13 +177,10 @@ def i_am_first(my_first,the_address):
 
 def checkmyname(myaddress):
 
-	conn = sqlite3.connect(bis_root)
-	conn.text_factory = str
-	c = conn.cursor()
+	c = new_db.cursor()
 	c.execute("SELECT * FROM transactions WHERE address = ? AND recipient = ? AND amount > ? AND openfield LIKE 'Minername=%' ORDER BY block_height ASC;",(myaddress,myaddress,"1"))
 	namelist = c.fetchall()
 	c.close()
-	conn.close()
 	
 	goodname = ""
 
@@ -171,13 +199,10 @@ def checkmyname(myaddress):
 	
 def checkalias(myaddress):
 
-	conn = sqlite3.connect(bis_root)
-	conn.text_factory = str
-	c = conn.cursor()
+	c = new_db.cursor()
 	c.execute("SELECT * FROM transactions WHERE address = ? AND recipient = ? AND fee != 0  AND openfield LIKE 'alias=%' ORDER BY block_height ASC;",(myaddress,myaddress))
 	namelist = c.fetchall()
 	c.close()
-	conn.close()
 	
 	goodname = ""
 
@@ -201,9 +226,7 @@ def checkalias(myaddress):
 
 def refresh(testAddress):
 
-	conn = sqlite3.connect(bis_root)
-	conn.text_factory = str
-	c = conn.cursor()
+	c = new_db.cursor()
 	c.execute("SELECT sum(amount) FROM transactions WHERE recipient = ?;",(testAddress,))
 	credit = c.fetchone()[0]
 	c.execute("SELECT sum(amount),sum(fee),sum(reward) FROM transactions WHERE address = ?;",(testAddress,))
@@ -239,7 +262,6 @@ def refresh(testAddress):
 	balance = (credit + rewards) - (debit + fees)
 	
 	c.close()
-	conn.close()
 	
 	get_stuff = [str(credit),str(debit),str(rewards),str(fees),str(balance),t_max, t_min, b_count]
 		
@@ -275,13 +297,10 @@ def updatedb():
 
 	mysponsors = []
 
-	conn = sqlite3.connect(bis_root)
-	c = conn.cursor()
-	conn.text_factory = str
+	c = new_db.cursor()
 	c.execute("SELECT * FROM transactions WHERE recipient = ? AND instr(openfield, 'sponsor=') > 0;",(myaddress,))
 	mysponsors = c.fetchall()
 	c.close()
-	conn.close()
 
 	the_sponsors = []
 	#print mysponsors
@@ -320,12 +339,10 @@ def updatedb():
 
 	r_all = []
 
-	ronn = sqlite3.connect(bis_root)
-	r = ronn.cursor()
+	r = new_db.cursor()
 	r.execute("SELECT distinct recipient FROM transactions WHERE amount !=0 OR reward !=0;")
 	r_all = r.fetchall()
 	r.close()
-	ronn.close()
 	
 	logging.info("Tools DB: getting richlist and minerlist information.....")
 	
@@ -366,14 +383,16 @@ def buildtoolsdb():
 	while bobble:
 		logging.info("Tools DB: Waiting for 30 minutes.......")
 		print("Tools DB: Waiting for 30 minutes.......")
+		new_db.close()
 		time.sleep(1800)
+		dbtoram()
 		bobble = updatedb()
 
 def checkstart():
 
 	if not os.path.exists('tools.db'):
 		# create empty miners database
-		logging.info("Tools DB: Create New as none exisits")
+		logging.info("Tools DB: Create New as none exists")
 		mlist = sqlite3.connect('tools.db')
 		mlist.text_factory = str
 		m = mlist.cursor()
@@ -383,7 +402,8 @@ def checkstart():
 		mlist.commit()
 		mlist.close()
 		# create empty tools.db
-		
+
+dbtoram()
 latest()
 checkstart()
 
@@ -391,7 +411,7 @@ checkstart()
 #                       MAIN APP
 # ///////////////////////////////////////////////////////////
 
-# get latest 15 transactions
+# get coins in circulation
 
 def getcirc():
 
@@ -421,6 +441,8 @@ def getcirc():
 	conn.close()	
 	
 	return allcirc
+
+# get latest 15 transactions
 
 def getall():
 
@@ -480,7 +502,7 @@ def get_sponsor():
 
 	if mysponsor:
 	
-		logging.info("Sponsors: Get sites from toosl.db")
+		logging.info("Sponsors: Get sites from tools.db")
 		conn = sqlite3.connect('tools.db')
 		conn.text_factory = str
 		c = conn.cursor()
@@ -535,6 +557,7 @@ def bgetvars(myaddress):
 def my_head(bo):
 
 	mhead = []
+	dado = myoginfo()
 	
 	mhead.append('<!doctype html>\n')
 	mhead.append('<html>\n')
@@ -551,16 +574,17 @@ def my_head(bo):
 	mhead.append(bo + '\n')
 	mhead.append('</style>\n')
 	mhead.append('<meta property="og:type" content="website" />\n')
-	mhead.append('<meta property="og:title" content="Bismuth Tools Web Edition" />\n')
-	mhead.append('<meta property="og:description" content="In the truly free world, there are no limits" />\n')
-	mhead.append('<meta property="og:url" content="http://bismuth.cz/" />\n')
-	mhead.append('<meta property="og:site_name" content="Bismuth Tools" />\n')
-	mhead.append('<meta property="og:image" content="https://i1.wp.com/bismuth.cz/wp-content/uploads/2017/03/cropped-mesh2-2.png?fit=200%2C200" />\n')
+	mhead.append('<meta property="og:title" content="{}" />\n'.format(dado[0]))
+	mhead.append('<meta property="og:description" content="{}" />\n'.format(dado[1]))
+	mhead.append('<meta property="og:url" content="{}" />\n'.format(dado[2]))
+	mhead.append('<meta property="og:site_name" content="{}" />\n'.format(dado[3]))
+	mhead.append('<meta property="og:image" content="{}" />\n'.format(dado[4]))
 	mhead.append('<meta property="og:image:width" content="200" />\n')
 	mhead.append('<meta property="og:image:height" content="200" />\n')
 	mhead.append('<meta property="og:locale" content="en_US" />\n')
 	mhead.append('<meta property="xbm:version" content="201" />\n')
-	mhead.append('<title>Bismuth Tools</title>\n')
+	mhead.append('<meta name="description" content="{}" />\n'.format(dado[1]))
+	mhead.append('<title>{}</title>\n'.format(dado[0]))
 	mhead.append('</head>\n')
 	mhead.append('<body background="static/explorer_bg.png">\n')
 	mhead.append('<center>\n')
@@ -713,7 +737,8 @@ class minerquery:
 		lister = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
 		
 		lister.append('<h2>Bismuth Miner Statistics</h2>\n')
-		lister.append('<p><b>Mining statistics since block number: {}</b></p>\n'.format(str(hyper_limit)))
+		if hyper_limit > 1:
+			lister.append('<p><b>Mining statistics since block number: {}</b></p>\n'.format(str(hyper_limit)))
 		lister.append('<p><b>Hint: Click on an address to see more detail</b></p>\n')
 		lister.append('<p>Note: this page may be up to 45 mins behind</p>\n')
 		lister.append('<p style="color:#08750A">{}</p>\n'.format(addressis))
@@ -754,8 +779,9 @@ class ledgerquery:
 		plotter.append('</form>\n')
 		#plotter.append('</p>\n')
 		plotter.append('<p>The latest block: {} was found {} seconds ago</p>\n'.format(str(mylatest[0]),str(int(mylatest[1]))))
-		plotter.append('<p>The last Hyperblock was at block: {}</p>\n'.format(str(hyper_limit)))
-		plotter.append('<p>Queries for blocks before {} will not be found</p>\n'.format(str(hyper_limit)))
+		if hyper_limit > 1:
+			plotter.append('<p>The last Hyperblock was at block: {}</p>\n'.format(str(hyper_limit)))
+			plotter.append('<p>Queries for blocks before {} will not be found</p>\n'.format(str(hyper_limit)))
 		plotter.append('</body>\n')
 		plotter.append('</html>')
 		# Initial Form
