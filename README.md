@@ -70,6 +70,11 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 Changes
 =======
 
+Version 2.0.3 18/06/2017
+------------------------
+
+1. Ledgerquery threading error fix
+
 Version 2.0.2 17/06/2017
 ------------------------
 

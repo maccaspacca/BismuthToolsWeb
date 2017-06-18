@@ -1,6 +1,6 @@
 # Bismuth Tools Web Edition
-# Version 202
-# Date 17/06/2017
+# Version 203
+# Date 18/06/2017
 # Copyright Maccaspacca 2017
 # Copyright Hclivess 2016 to 2017
 # Author Maccaspacca
@@ -226,6 +226,52 @@ def checkalias(myaddress):
 
 def refresh(testAddress):
 
+	conn = sqlite3.connect(bis_root)
+	conn.text_factory = str
+	c = conn.cursor()
+	c.execute("SELECT sum(amount) FROM transactions WHERE recipient = ?;",(testAddress,))
+	credit = c.fetchone()[0]
+	c.execute("SELECT sum(amount),sum(fee),sum(reward) FROM transactions WHERE address = ?;",(testAddress,))
+	tester = c.fetchall()
+
+	debit = tester[0][0]
+	fees = tester[0][1]
+	rewards = tester[0][2]
+	
+	if rewards > 0:		
+		c.execute("SELECT count(*) FROM transactions WHERE address = ? AND (reward != 0);",(testAddress,))
+		b_count = c.fetchone()[0]
+		c.execute("SELECT MAX(timestamp) FROM transactions WHERE recipient = ? AND (reward !=0);",(testAddress,))
+		t_max = c.fetchone()[0]
+		c.execute("SELECT MIN(timestamp) FROM transactions WHERE recipient = ? AND (reward !=0);",(testAddress,))
+		t_min = c.fetchone()[0]
+
+		t_min = str(time.strftime("at %H:%M:%S on %d/%m/%Y", time.gmtime(float(t_min))))
+		t_max = str(time.strftime("at %H:%M:%S on %d/%m/%Y", time.gmtime(float(t_max))))
+	else:
+		b_count = 0
+		t_min = 0
+		t_max = 0
+	
+	if not debit:
+		debit = 0
+	if not fees:
+		fees = 0
+	if not rewards:
+		rewards = 0
+	if not credit:
+		credit = 0
+	balance = (credit + rewards) - (debit + fees)
+	
+	c.close()
+	conn.close()
+	
+	get_stuff = [str(credit),str(debit),str(rewards),str(fees),str(balance),t_max, t_min, b_count]
+		
+	return get_stuff
+
+def xrefresh(testAddress):
+
 	c = new_db.cursor()
 	c.execute("SELECT sum(amount) FROM transactions WHERE recipient = ?;",(testAddress,))
 	credit = c.fetchone()[0]
@@ -265,9 +311,8 @@ def refresh(testAddress):
 	
 	get_stuff = [str(credit),str(debit),str(rewards),str(fees),str(balance),t_max, t_min, b_count]
 		
-	return get_stuff	
-
-
+	return get_stuff		
+	
 def updatedb():
 
 	print("Updating database.....wait")
@@ -350,7 +395,7 @@ def updatedb():
 	
 	for x in r_all:
 	
-		btemp = refresh(str(x[0]))
+		btemp = xrefresh(str(x[0]))
 		m_alias = checkalias(str(x[0]))
 		print(str(x[0]))
 		#print(m_alias)
