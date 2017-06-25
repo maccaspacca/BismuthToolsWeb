@@ -25,17 +25,16 @@ Windows
 3. The latest executable from releases https://github.com/maccaspacca/BismuthToolsWeb/releases use "bismuthtoolsweb.exe" and access from a browser (localhost:8080)
 
 Run from source
-1. Python 2.7 and dependencies as detailed at https://bitcointalk.org/index.php?topic=1525078
-2. wxpython for your Python 2.7 installation as found here: https://wxpython.org/download.php
-3. If you have sponsors enabled then you will need BS4 (pip install bs4)
-4. If you wish you can compile your own executables using pyinstaller and the .cmd files provided
+1. Python 2.7 or 3.5 and dependencies as detailed at https://bitcointalk.org/index.php?topic=1896497
+2. BS4 ([sudo] [pip] [pip3] install bs4)
+3. If you wish you can compile your own executables using pyinstaller and the .cmd files provided
 
 Linux e.g. Ubuntu 16.04 LTS
 ===========================
 
-1. Python 2.7 and dependencies as detailed at https://bitcointalk.org/index.php?topic=1525078
+1. Python 2.7 or 3.5 and dependencies as detailed at https://bitcointalk.org/index.php?topic=1896497
 2. The Bismuth cryptocurrency installed from source (some additional python components such as pysocks may be needed depending on your installation)
-4. If you have sponsors enabled then you will need BS4 (pip install bs4)
+4. BS4 ([sudo] [pip] [pip3] install bs4)
 5. You can also compile your own executables using pyinstaller and the .cmd file provided or use the ones provided in releases
 
 File placement
@@ -69,6 +68,13 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 
 Changes
 =======
+
+Version 3.0.0 25/06/2017
+------------------------
+
+1. Python 3.5 support
+2. Move from the web.py to the bottle web framework
+3. Improve threading error fix from 2.0.3
 
 Version 2.0.3 18/06/2017
 ------------------------
