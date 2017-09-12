@@ -1,5 +1,5 @@
 # Bismuth Tools Web Edition
-# Version 300
+# Version 301
 # Date 25/06/2017
 # Copyright Maccaspacca 2017
 # Copyright Hclivess 2016 to 2017
@@ -284,8 +284,9 @@ def refresh(testAddress,typical):
 		rewards = 0
 	if not credit:
 		credit = 0
+
 	balance = (credit + rewards) - (debit + fees)
-	
+
 	c.close()
 	
 	if typical == 1:
@@ -351,14 +352,14 @@ def updatedb():
 		except:
 			pass
 	if not the_sponsors:
-		the_sponsors.append(("Bismuth","https://i1.wp.com/bismuth.cz/wp-content/uploads/2017/03/cropped-mesh2-2.png?fit=200%%2C200","http://bismuth.cz/","In the truly free world, there are no limits","500000","68924","Bismuth"))
+		the_sponsors.append(("Bismuth","https://i1.wp.com/bismuth.cz/wp-content/uploads/2017/03/cropped-mesh2-2.png","http://bismuth.cz/","In the truly free world, there are no limits","500000","68924","Bismuth"))
 			
 	logging.info("Tools DB: Inserting sponsor information into database.....")
 			
 	for y in the_sponsors:
 
 		m.execute('INSERT INTO sponsorlist VALUES (?,?,?,?,?,?,?)', (y[0],y[1],y[2],y[3],y[4],y[5],y[6]))
-		tools.commit()
+	tools.commit()
 
 # ////////////////////////////////////////////////////////////
 
@@ -408,7 +409,6 @@ def buildtoolsdb():
 	#bobble = True
 	
 	while bobble:
-		logging.info("Tools DB: Waiting for 30 minutes.......")
 		print("Tools DB: Waiting for 30 minutes.......")
 		new_db.close()
 		time.sleep(1800)
@@ -705,7 +705,7 @@ def home():
 
 	starter = "" + str(''.join(initial))
 
-	return starter
+	return starter.encode("utf-8")
 		
 @get('/minerquery')
 def minerquery():
@@ -779,7 +779,7 @@ def minerquery():
 
 	html = "" + str(''.join(lister))
 
-	return html
+	return html.encode("utf-8")
 
 @get('/ledgerquery')
 def ledger_form():
@@ -807,7 +807,7 @@ def ledger_form():
 
 	html = "" + str(''.join(plotter))
 
-	return html
+	return html.encode("utf-8")
 
 @post('/ledgerquery')
 def ledger_query():
@@ -954,7 +954,7 @@ def ledger_query():
 	
 	html1 = "" + str(''.join(replot))
 
-	return html1
+	return html1.encode("utf-8")
 
 @route('/sponsorinfo')
 def sponsorinfo():
@@ -989,7 +989,7 @@ def sponsorinfo():
 
 	starter = "" + str(''.join(initial))
 
-	return starter
+	return starter.encode("utf-8")
 
 @route('/richest')
 def richest():
@@ -1016,7 +1016,7 @@ def richest():
 			view.append("<td>{}</td>".format(str(j)))
 			view.append("<td>{}</td>".format(str(x[0])))
 			view.append("<td>{}</td>".format(str(x[2])))
-			view.append("<td>{}</td>".format(str(x[1])))				
+			view.append("<td>{:.8f}</td>".format(x[1]))				
 			j = j+1
 			view.append("</tr>\n")
 		i = i+1
@@ -1044,7 +1044,7 @@ def richest():
 
 	html = "" + str(''.join(lister))
 
-	return html
+	return html.encode("utf-8")
 
 urls = (
     '/', 'index',

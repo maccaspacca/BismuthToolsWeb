@@ -6,13 +6,14 @@ This repository contains tools for the Bismuth Cryptocurrency
 
 For license see LICENSE file
 
-See releases for pre-compiled versions
+See releases for pre-compiled versions (pre-compiled versions no longer available)
 
 No promises are given that the tools will run on your particular system
 
 Notes:
 
 1. In order to take into account the use of Hyperblocks technology the query components are only designed to use blocks since the latest hyperblock in your ledger.
+2. It is recommended that this tool be run against a full ledger
 
 Requirements
 ============
@@ -22,7 +23,6 @@ Windows
 
 1. Windows 7 or better
 2. Bismuth cryptocurrency installed via the latest installation executable at https://github.com/hclivess/bismuth/releases or run from source
-3. The latest executable from releases https://github.com/maccaspacca/BismuthToolsWeb/releases use "bismuthtoolsweb.exe" and access from a browser (localhost:8080)
 
 Run from source
 1. Python 2.7 or 3.5 and dependencies as detailed at https://bitcointalk.org/index.php?topic=1896497
@@ -35,7 +35,7 @@ Linux e.g. Ubuntu 16.04 LTS
 1. Python 2.7 or 3.5 and dependencies as detailed at https://bitcointalk.org/index.php?topic=1896497
 2. The Bismuth cryptocurrency installed from source (some additional python components such as pysocks may be needed depending on your installation)
 4. BS4 ([sudo] [pip] [pip3] install bs4)
-5. You can also compile your own executables using pyinstaller and the .cmd file provided or use the ones provided in releases
+5. You can also compile your own executables using pyinstaller and the .cmd file provided
 
 File placement
 ==============
@@ -43,8 +43,6 @@ File placement
 The files can be placed on your desktop, in your home folder etc. depending on your OS, in a folder of your choosing.
 
 The location of your ledger.db file must be set in the toolsconfig.ini file before running. Follow the comments in the file.
-
-The windows installer executable will create the tools folder for you on at "c:\toolsweb"
 
 tools.db
 =========
@@ -68,6 +66,12 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 
 Changes
 =======
+Version 3.0.1 12/09/2017
+------------------------
+
+1. Fix richlist display error
+2. Fix text encode issue in bottle
+3. No compiled releases in this version
 
 Version 3.0.0 25/06/2017
 ------------------------
