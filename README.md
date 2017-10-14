@@ -21,21 +21,20 @@ Requirements
 Windows
 =======
 
-1. Windows 7 or better
-2. Bismuth cryptocurrency installed via the latest installation executable at https://github.com/hclivess/bismuth/releases or run from source
-
-Run from source
-1. Python 2.7 or 3.5 and dependencies as detailed at https://bitcointalk.org/index.php?topic=1896497
-2. BS4 ([sudo] [pip] [pip3] install bs4)
-3. If you wish you can compile your own executables using pyinstaller and the .cmd files provided
+1. Bismuth cryptocurrency installed via the latest installation executable at https://github.com/hclivess/bismuth/releases or run from source
+2. Full Bismuth node with full ledger mode
+3. Python 3.5.3 and dependencies as detailed at https://bitcointalk.org/index.php?topic=1896497
+4. BS4 ([sudo] [pip] [pip3] install bs4)
+5. Flask
 
 Linux e.g. Ubuntu 16.04 LTS
 ===========================
 
-1. Python 2.7 or 3.5 and dependencies as detailed at https://bitcointalk.org/index.php?topic=1896497
+1. Python 3.5.3 and dependencies as detailed at https://bitcointalk.org/index.php?topic=1896497
 2. The Bismuth cryptocurrency installed from source (some additional python components such as pysocks may be needed depending on your installation)
+3. Full Bismuth node with full ledger mode
 4. BS4 ([sudo] [pip] [pip3] install bs4)
-5. You can also compile your own executables using pyinstaller and the .cmd file provided
+5. Flask
 
 File placement
 ==============
@@ -62,10 +61,21 @@ sponsors = insert 1 to switch on sponsors or 0 to switch off
 
 rate = insert the number of blocks per Bismuth the sponsor advert will be displayed for
 
+hostname = the base external hostname of the server e.g. bismuth.online
+
+display = insert the maximum number of transaction records to be displayed on query of large addresses if set to zero this will return all transactions
+
 There are two sponsor spots on the main web landing page of the tools and a sponsor will be picked randomly from your sponsorlist.
 
 Changes
 =======
+Version 4.0.0 14/10/2017
+------------------------
+
+1. Move from Bottle to Flask
+2. Initial API implementation
+3. No compiled releases in this version
+
 Version 3.0.1 12/09/2017
 ------------------------
 
@@ -116,6 +126,5 @@ Future Improvements:
 1. Other Ledger Information page: to list hyperblock and query "keep" transactions
 2. Network information page
 3. Look and feel improvements
-4. Pyhton 3.x compatibility
-5. Move sponsors from local definition to blockchain with payments shared between those hosting webtools
+4. Ledgerquery improvements allowing more efficient display for addresses with high numbers of transactions.
 
