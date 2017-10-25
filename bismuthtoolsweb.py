@@ -1,9 +1,13 @@
 # Bismuth Tools Web Edition
-# Version 4.0.0
-# Date 14/10/2017
+# Version 4.0.1
+# Date 25/10/2017
 # Copyright Maccaspacca 2017
 # Copyright Hclivess 2016 to 2017
 # Author Maccaspacca
+
+from tornado.wsgi import WSGIContainer
+from tornado.httpserver import HTTPServer
+from tornado.ioloop import IOLoop
 
 from flask import Flask, request
 app = Flask(__name__)
@@ -48,8 +52,15 @@ mysponsor = int(config.get('My Sponsors', 'sponsors'))
 myaddress = config.get('My Sponsors', 'address')
 myrate = float(config.get('My Sponsors', 'rate'))
 myhost = config.get('My Sponsors', 'hostname')
-mydisplay = int(config.get('My Sponsors', 'display'))
+try:
+	mydisplay = int(config.get('My Sponsors', 'display'))
+except:
+	mydisplay = 0
 bis_root = config.get('My Bismuth', 'dbpath')
+try:
+	front_display = config.get('My Sponsors', 'front')
+except:
+	front_display = 15
 logging.info("Config file read completed")
 config = None
 
@@ -461,7 +472,7 @@ def getall():
 	conn = sqlite3.connect(bis_root)
 	conn.text_factory = str
 	c = conn.cursor()
-	c.execute("SELECT * FROM transactions ORDER BY block_height DESC, timestamp DESC LIMIT 15;")
+	c.execute("SELECT * FROM transactions ORDER BY block_height DESC, timestamp DESC LIMIT ?;", (front_display,))
 
 	myall = c.fetchall()
 
@@ -678,9 +689,9 @@ def home():
 	initial.append('<td align="center" style="border:hidden;">\n')
 	initial.append('<h1>Bismuth Cryptocurrency</h1>\n')
 	initial.append('<h2>Welcome to the Bismuth Tools Web Edition</h2>\n')
-	initial.append('<p>Choose what you want to to do next by clicking an option from the menu above</p>\n')
+	initial.append('<p>Choose what you want to do next by clicking an option from the menu above</p>\n')
 	initial.append('<p><b>There are {} Bismuth in circulation</b></p>\n'.format(str(currcoins)))
-	initial.append('<h2>Last 15 Transactions</h2>\n')
+	initial.append('<h2>Last {} Transactions</h2>\n'.format(front_display))
 	initial.append('</td>\n')
 	initial.append('<td align="center" style="border:hidden;">')
 	sponsor2 = get_sponsor()
@@ -1076,6 +1087,10 @@ def apihelp():
 	initial.append('<p align="left">Parameter1: address</p>\n')
 	initial.append('<p align="left">--->Parameter2: input a bismuth address <i>(gets a summary of information about a Bismuth address)</i></p>\n')
 	initial.append('<p></p>\n')
+	initial.append('<p align="left">Parameter1: getall</p>\n')
+	initial.append('<p align="left">--->Parameter2: input a bismuth address <i>(gets a limited list of transactions against a Bismuth address)</i></p>\n')
+	initial.append('<p align="left"><i>List is limited to {} transactions</i></p>\n'.format(str(mydisplay)))
+	initial.append('<p></p>\n')
 	initial.append('<p align="left">Parameter1: block</p>\n')
 	initial.append('<p align="left">--->Parameter2: input a block number <i>(gets information about a Bismuth block)</i></p>\n')
 	initial.append('<p></p>\n')
@@ -1137,6 +1152,36 @@ def handler(param1, param2):
 			r = "invalid address"
 			e = {"error":r}
 			return json.dumps(e), 400, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+	elif param1 == "getall":
+		getaddress = str(param2)
+		if not getaddress or not s_test(getaddress):
+			r = "invalid data entered"
+			e = {"error":r}
+			return json.dumps(e), 400, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+		else:
+			all = []
+			conn = sqlite3.connect(bis_root)
+			c = conn.cursor()
+			if mydisplay == 0:
+				c.execute("SELECT * FROM transactions WHERE address = ? OR recipient = ? ORDER BY block_height DESC;", (getaddress,getaddress))
+			else:
+				c.execute("SELECT * FROM transactions WHERE address = ? OR recipient = ? ORDER BY block_height DESC LIMIT ?;", (getaddress,getaddress,str(mydisplay)))
+			all = c.fetchall()
+			c.close()
+			conn.close()
+			if not all:
+				r = "address does not exist or invalid address"
+				e = {"error":r}
+				return json.dumps(e), 404, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+			else:
+				y = []
+				y.append({"address":getaddress,"limit":"{} records".format(str(mydisplay))})
+				
+				for b in all:
+					y.append({"timestamp":str(b[1]),"from":str(b[2]),"to":str(b[3]),"amount":str(b[4]),"fee":str(b[8]),"reward":str(b[9]),"keep":str(b[10]),"openfield":str(b[11])})
+				
+				return json.dumps(y), 200, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+
 	elif param1 == "block":
 		myblock = str(param2)
 		if not myblock or not myblock.isalnum():
@@ -1151,6 +1196,7 @@ def handler(param1, param2):
 			all = c.fetchall()
 			c.close()
 			conn.close()
+
 			if not all:
 				r = "block does not exist or invalid block"
 				e = {"error":r}
@@ -1279,4 +1325,9 @@ if __name__ == "__main__":
 	background_thread.daemon = True
 	background_thread.start()
 	logging.info("Databases: Start Thread")
-	app.run(host='0.0.0.0', port=8080, debug=True)
+	
+	http_server = HTTPServer(WSGIContainer(app))
+	http_server.listen(8080)
+	IOLoop.instance().start()
+	
+	#app.run()

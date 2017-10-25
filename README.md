@@ -26,6 +26,7 @@ Windows
 3. Python 3.5.3 and dependencies as detailed at https://bitcointalk.org/index.php?topic=1896497
 4. BS4 ([sudo] [pip] [pip3] install bs4)
 5. Flask
+6. tornado
 
 Linux e.g. Ubuntu 16.04 LTS
 ===========================
@@ -35,6 +36,7 @@ Linux e.g. Ubuntu 16.04 LTS
 3. Full Bismuth node with full ledger mode
 4. BS4 ([sudo] [pip] [pip3] install bs4)
 5. Flask
+6. tornado
 
 File placement
 ==============
@@ -65,10 +67,19 @@ hostname = the base external hostname of the server e.g. bismuth.online
 
 display = insert the maximum number of transaction records to be displayed on query of large addresses if set to zero this will return all transactions
 
+front = insert the number of latest transactions to display on the front page
+
 There are two sponsor spots on the main web landing page of the tools and a sponsor will be picked randomly from your sponsorlist.
 
 Changes
 =======
+Version 4.0.1 25/10/2017
+------------------------
+
+1. Implement running flask on tornado web framework
+2. Minor fixes and adjustments
+3. No compiled releases in this version
+
 Version 4.0.0 14/10/2017
 ------------------------
 
