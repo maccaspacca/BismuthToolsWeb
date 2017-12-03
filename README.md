@@ -73,6 +73,13 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 
 Changes
 =======
+Version 4.1.0 03/12/2017
+------------------------
+
+1. Updates to api
+2. Minor fixes and adjustments
+3. No compiled releases in this version
+
 Version 4.0.1 25/10/2017
 ------------------------
 

@@ -1,6 +1,6 @@
 # Bismuth Tools Web Edition
-# Version 4.0.1
-# Date 25/10/2017
+# Version 4.1.0
+# Date 03/12/2017
 # Copyright Maccaspacca 2017
 # Copyright Hclivess 2016 to 2017
 # Author Maccaspacca
@@ -16,7 +16,7 @@ import json, sqlite3, time, re, os
 from multiprocessing import Process
 import multiprocessing
 from bs4 import BeautifulSoup
-import base64, logging, random, platform
+import logging, random, platform
 
 try:
     # For Python 3.0 and later
@@ -139,7 +139,6 @@ def latest():
 def getmeta(this_url):
 # This module attempts to get Open Graph information for the sponsor site_name
 # If this fails it attempts to use the "name" property before just filling the info with the url
-	#print this_url
 
 	this_property = ("og:title","og:image","og:url","og:description","og:site_name")
 	oginfo = []
@@ -162,7 +161,6 @@ def getmeta(this_url):
 			else:
 				oginfo.append("")
 
-	#print(oginfo)
 	return oginfo
 
 def i_am_first(my_first,the_address):
@@ -300,6 +298,44 @@ def refresh(testAddress,typical):
 		
 	return get_stuff
 	
+def sponsor_list(thisaddress,thisrate):
+
+	mysponsors = []
+
+	conn = sqlite3.connect(bis_root)
+	conn.text_factory = str
+	c = conn.cursor()
+	c.execute("SELECT * FROM transactions WHERE recipient = ? AND instr(openfield, 'sponsor=') > 0;",(thisaddress,))
+	mysponsors = c.fetchall()
+	c.close()
+
+	the_sponsors = []
+
+	for dudes in mysponsors:
+
+		dud = dudes[11].split("sponsor=")
+
+		try:
+			temp_block = dudes[0]
+			temp_paid = float(dudes[4])
+			max_block = temp_block + (int(round(temp_paid * thisrate)) + 100)
+
+			latest_block = latest()
+						
+			if latest_block[0] < max_block:
+				temp_ogs = getmeta(str(dud[1]))
+				the_sponsors.append((temp_ogs[0],temp_ogs[1],temp_ogs[2],temp_ogs[3],str(max_block),str(temp_block),temp_ogs[4]))
+			else:
+				pass
+			
+		except:
+			pass
+
+	if not the_sponsors:
+		the_sponsors.append(("Bismuth","https://i1.wp.com/bismuth.cz/wp-content/uploads/2017/03/cropped-mesh2-2.png","http://bismuth.cz/","In the truly free world, there are no limits","500000","68924","Bismuth"))
+			
+	return the_sponsors
+	
 def updatedb():
 
 	print("Updating database.....wait")
@@ -324,38 +360,7 @@ def updatedb():
 
 	logging.info("Tools DB: Getting up to date list of sponsors.....")
 
-	mysponsors = []
-
-	conn = sqlite3.connect(bis_root)
-	conn.text_factory = str
-	c = conn.cursor()
-	c.execute("SELECT * FROM transactions WHERE recipient = ? AND instr(openfield, 'sponsor=') > 0;",(myaddress,))
-	mysponsors = c.fetchall()
-	c.close()
-
-	the_sponsors = []
-	#print mysponsors
-
-	for dudes in mysponsors:
-
-		dud = dudes[11].split("sponsor=")
-		try:
-			temp_block = dudes[0]
-			temp_paid = float(dudes[4])
-			max_block = temp_block + (int(round(temp_paid * myrate)) + 100)
-
-			latest_block = latest()
-						
-			if latest_block[0] < max_block:
-				temp_ogs = getmeta(str(dud[1]))
-				the_sponsors.append((temp_ogs[0],temp_ogs[1],temp_ogs[2],temp_ogs[3],str(max_block),str(temp_block),temp_ogs[4]))
-			else:
-				pass
-			
-		except:
-			pass
-	if not the_sponsors:
-		the_sponsors.append(("Bismuth","https://i1.wp.com/bismuth.cz/wp-content/uploads/2017/03/cropped-mesh2-2.png","http://bismuth.cz/","In the truly free world, there are no limits","500000","68924","Bismuth"))
+	the_sponsors = sponsor_list(myaddress,myrate)
 			
 	logging.info("Tools DB: Inserting sponsor information into database.....")
 			
@@ -369,7 +374,8 @@ def updatedb():
 # rich and miner lists ///////////////////////////////////////
 
 	r_all = []
-
+	conn = sqlite3.connect(bis_root)
+	conn.text_factory = str
 	r = conn.cursor()
 	r.execute("SELECT distinct recipient FROM transactions WHERE amount !=0 OR reward !=0;")
 	r_all = r.fetchall()
@@ -391,6 +397,9 @@ def updatedb():
 			temp_miner = str(x[0])
 			if len(temp_miner) == 56:
 				m_name = checkmyname(temp_miner)
+				if len(m_name) == 0:
+					if len(m_alias) > 0:
+						m_name = m_alias
 				m.execute('INSERT INTO minerlist VALUES (?,?,?,?,?,?)', (temp_miner, btemp[5], btemp[6], btemp[7], btemp[2], m_name))
 		
 	m.execute("commit")
@@ -480,6 +489,19 @@ def getall():
 	conn.close()
 	
 	return myall
+	
+def get_open(thisblock,thisopen):
+
+	conn = sqlite3.connect(bis_root)
+	conn.text_factory = str
+	c = conn.cursor()
+	c.execute("SELECT * FROM transactions WHERE block_height = ? AND openfield = ?;", (thisblock,thisopen))
+
+	myopen = c.fetchone()
+	c.close()
+	conn.close()
+	
+	return myopen
 
 def test(testString):
 
@@ -1030,13 +1052,17 @@ def richest():
 				color_cell = "white"
 			else:
 				color_cell = "#E8E8E8"
-			view.append("<tr bgcolor ='{}'>".format(color_cell))
-			view.append("<td>{}</td>".format(str(j)))
-			view.append("<td>{}</td>".format(str(x[0])))
-			view.append("<td>{}</td>".format(str(x[2])))
-			view.append("<td>{:.8f}</td>".format(x[1]))				
-			j = j+1
-			view.append("</tr>\n")
+			amt = "{:.8f}".format(x[1])
+			if amt == "0.00000000" or amt == "-0.00000000":
+				pass
+			else:
+				view.append("<tr bgcolor ='{}'>".format(color_cell))
+				view.append("<td>{}</td>".format(str(j)))
+				view.append("<td>{}</td>".format(str(x[0])))
+				view.append("<td>{}</td>".format(str(x[2])))
+				view.append("<td>{:.8f}</td>".format(x[1]))				
+				j = j+1
+				view.append("</tr>\n")
 		i = i+1
 	
 	lister = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
@@ -1105,6 +1131,12 @@ def apihelp():
 	initial.append('<p></p>\n')
 	initial.append('<p align="left">Parameter1: aminer</p>\n')
 	initial.append('<p align="left">--->Parameter2: input a miner address <i>(gets more information about a specific Bismuth miner)</i></p>\n')
+	initial.append('<p></p>\n')
+	initial.append('<p align="left">Parameter1: transaction</p>\n')
+	initial.append('<p align="left">--->Parameter2: input a block number and amount separated by an = sign <i>(gets information about transaction)</i></p>\n')
+	initial.append('<p></p>\n')
+	initial.append('<p align="left">Parameter1: diffhist</p>\n')
+	initial.append('<p align="left">--->Parameter2: number of blocks, greater than 10 <i>(gets the difficulty history for a specific number of previous blocks)</i></p>\n')
 	initial.append('</td>\n')
 	initial.append('<td align="center" style="border:hidden;">')
 	initial.append('<p></p>')
@@ -1131,7 +1163,7 @@ def handler(param1, param2):
 			x = latest()
 			y = "%.2f" % x[1]
 			z = str(time.strftime("%Y/%m/%d,%H:%M:%S", time.gmtime(float(x[4]))))
-			d = {'found':z,'height':str(x[0]),'age':str(y),'diff':str(x[2]),'finder':str(x[3]),'blockhash':str(x[5]),'nonce':str(x[6])}
+			d = {'found':z,'height':str(x[0]),'age':str(y),'difficulty':str(x[2]),'finder':str(x[3]),'blockhash':str(x[5]),'nonce':str(x[6])}
 			return json.dumps(d), 200, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
 		else:
 			r = "invalid request"
@@ -1178,7 +1210,43 @@ def handler(param1, param2):
 				y.append({"address":getaddress,"limit":"{} records".format(str(mydisplay))})
 				
 				for b in all:
-					y.append({"timestamp":str(b[1]),"from":str(b[2]),"to":str(b[3]),"amount":str(b[4]),"fee":str(b[8]),"reward":str(b[9]),"keep":str(b[10]),"openfield":str(b[11])})
+					y.append({"block":str(b[0]),"timestamp":str(b[1]),"from":str(b[2]),"to":str(b[3]),"amount":str(b[4]),"fee":str(b[8]),"reward":str(b[9]),"keep":str(b[10]),"openfield":str(b[11])})
+				
+				return json.dumps(y), 200, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+				
+	elif param1 == "getlimit":
+		getlimit = str(param2)
+		
+		if "=" in getlimit:	
+			getaddress = getlimit.split("=")[0]
+			mylimit = getlimit.split("=")[1]
+		else:
+			r = "invalid data entered"
+			e = {"error":r}
+			return json.dumps(e), 400, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}		
+		
+		if not getaddress or not s_test(getaddress):
+			r = "invalid data entered"
+			e = {"error":r}
+			return json.dumps(e), 400, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+		else:
+			all = []
+			conn = sqlite3.connect(bis_root)
+			c = conn.cursor()
+			c.execute("SELECT * FROM transactions WHERE address = ? OR recipient = ? ORDER BY block_height DESC LIMIT ?;", (getaddress,getaddress,mylimit))
+			all = c.fetchall()
+			c.close()
+			conn.close()
+			if not all:
+				r = "address does not exist or invalid address"
+				e = {"error":r}
+				return json.dumps(e), 404, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+			else:
+				y = []
+				y.append({"address":getaddress,"limit":"{} records".format(mylimit)})
+				
+				for b in all:
+					y.append({"block":str(b[0]),"timestamp":str(b[1]),"from":str(b[2]),"to":str(b[3]),"amount":str(b[4]),"hash":str(b[7]),"fee":str(b[8]),"reward":str(b[9]),"keep":str(b[10]),"openfield":str(b[11])})
 				
 				return json.dumps(y), 200, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
 
@@ -1194,6 +1262,7 @@ def handler(param1, param2):
 			c = conn.cursor()
 			c.execute("SELECT * FROM transactions WHERE block_height = ?;", (myblock,))
 			all = c.fetchall()
+
 			c.close()
 			conn.close()
 
@@ -1203,11 +1272,10 @@ def handler(param1, param2):
 				return json.dumps(e), 404, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
 			else:
 				y = []
-				y.append({"blocknumber":myblock})
-				y.append({"blockhash":str(all[0][7])})
+				y.append({"blocknumber":myblock,"blockhash":str(all[0][7])})
 				
 				for b in all:
-					y.append({"timestamp":str(b[1]),"from":str(b[2]),"to":str(b[3]),"amount":str(b[4]),"fee":str(b[8]),"reward":str(b[9]),"keep":str(b[10]),"openfield":str(b[11])})
+					y.append({"block":str(b[0]),"timestamp":str(b[1]),"from":str(b[2]),"to":str(b[3]),"amount":str(b[4]),"hash":str(b[7]),"fee":str(b[8]),"reward":str(b[9]),"keep":str(b[10]),"openfield":str(b[11])})
 				
 				return json.dumps(y), 200, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
 
@@ -1231,11 +1299,10 @@ def handler(param1, param2):
 				return json.dumps(e), 404, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
 			else:
 				y = []
-				y.append({"blockhash":gethash})
-				y.append({"blocknumber":str(all[0][0])})
-				
+				y.append({"blockhash":gethash,"blocknumber":str(all[0][0])})
+								
 				for b in all:
-					y.append({"timestamp":str(b[1]),"from":str(b[2]),"to":str(b[3]),"amount":str(b[4]),"fee":str(b[8]),"reward":str(b[9]),"keep":str(b[10]),"openfield":str(b[11])})
+					y.append({"block":str(b[0]),"timestamp":str(b[1]),"from":str(b[2]),"to":str(b[3]),"amount":str(b[4]),"hash":str(b[7]),"fee":str(b[8]),"reward":str(b[9]),"keep":str(b[10]),"openfield":str(b[11])})
 				
 				return json.dumps(y), 200, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
 	elif param1 == "richlist":
@@ -1303,7 +1370,121 @@ def handler(param1, param2):
 			r = "invalid address"
 			e = {"error":r}
 			return json.dumps(e), 400, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
-	
+			
+	elif param1 == "getsponsor":
+		getaddress = str(param2)
+		if not getaddress or not s_test(getaddress):
+			r = "invalid data entered"
+			e = {"error":r}
+			return json.dumps(e), 400, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+		else:
+
+			sponsor_result = sponsor_list(getaddress,14400)
+			
+			if not sponsor_result:
+				r = "oops there was a problem getting a sponsor url"
+				e = {"error":r}
+				return json.dumps(e), 404, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+			else:
+			
+				x_top = len(sponsor_result) -1
+				x_go = random.randint(0,x_top)
+				ts = sponsor_result[x_go]
+				
+				y = []
+
+				y.append({"title":ts[0],"image":ts[1],"url":ts[2],"description":ts[3],"sitename":ts[6]})
+				return json.dumps(y), 200, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+
+	elif param1 == "toolsaddress":
+
+		if str(param2) == "toolsaddress":
+			t_result = get_open("403786","toolsaddress")
+			#print(t_result)
+			
+			xo = t_result[2]
+			xi = t_result[3]
+			
+			if xo == xi:
+						
+				y = []
+				y.append({'toolsaddress':str(xo)})
+				return json.dumps(y), 200, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+			else:
+				r = "invalid data entered"
+				e = {"error":r}
+				return json.dumps(e), 400, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}			
+		else:
+			r = "invalid data entered"
+			e = {"error":r}
+			return json.dumps(e), 400, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+			
+	elif param1 == "transaction":
+		get_trans = str(param2)
+		
+		if "=" in get_trans:	
+			getblock = get_trans.split("=")[0]
+			myamnt = get_trans.split("=")[1]
+		else:
+			r = "invalid data entered"
+			e = {"error":r}
+			return json.dumps(e), 400, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}		
+		
+		if not getblock or not getblock.isalnum():
+			r = "invalid data entered"
+			e = {"error":r}
+			return json.dumps(e), 400, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+		else:
+			
+			conn = sqlite3.connect(bis_root)
+			conn.text_factory = str
+			c = conn.cursor()
+			c.execute("SELECT * FROM transactions WHERE block_height = ? AND amount = ?;", (getblock, myamnt))
+			td = c.fetchone()
+			c.close()
+			conn.close()
+
+			if not td:
+				r = "transaction does not exist or invalid transaction"
+				e = {"error":r}
+				return json.dumps(e), 404, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+			else:
+				y = {"block":str(td[0]),"timestamp":str(td[1]),"from":str(td[2]),"to":str(td[3]),"amount":str(td[4]),"hash":str(td[7]),"fee":str(td[8]),"reward":str(td[9]),"keep":str(td[10]),"openfield":str(td[11])}
+				return json.dumps(y), 200, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+				
+	elif param1 == "diffhist":
+		diff_num = str(param2)
+		dog = True
+		
+		conn = sqlite3.connect(bis_root)
+		conn.text_factory = str
+		c = conn.cursor()
+				
+		if diff_num.isdigit():
+			if int(diff_num) > 10:
+				c.execute("SELECT * FROM misc ORDER BY block_height DESC LIMIT ?;", (diff_num,))
+				d_result = c.fetchall()
+				b = []
+				d = []
+				d_result = list(reversed(d_result))
+				for v in d_result:
+					b.append(v[0])
+					d.append(float(v[1]))
+		
+		else:
+			dog = False
+		
+		c.close()
+		conn.close()
+
+		if dog:
+			y = [b,d]
+			return json.dumps(y), 200, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+		else:
+			r = "invalid request value must be more than 10"
+			e = {"error":r}
+			return json.dumps(e), 404, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+
 	else:
 		r = "invalid request"
 		e = {"error":r}
