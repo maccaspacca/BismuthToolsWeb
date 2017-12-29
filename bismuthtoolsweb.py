@@ -1,6 +1,6 @@
 # Bismuth Tools Web Edition
-# Version 4.1.0
-# Date 03/12/2017
+# Version 4.2.0
+# Date 29/12/2017
 # Copyright Maccaspacca 2017
 # Copyright Hclivess 2016 to 2017
 # Author Maccaspacca
@@ -16,7 +16,7 @@ import json, sqlite3, time, re, os
 from multiprocessing import Process
 import multiprocessing
 from bs4 import BeautifulSoup
-import logging, random, platform
+import logging, random, platform, requests
 
 try:
     # For Python 3.0 and later
@@ -61,6 +61,11 @@ try:
 	front_display = config.get('My Sponsors', 'front')
 except:
 	front_display = 15
+try:
+	cust_curr = config.get('My Sponsors', 'currency')
+except:
+	cust_curr = "EUR"
+
 logging.info("Config file read completed")
 config = None
 
@@ -80,6 +85,42 @@ else: # if its not windows then probably a linux or unix variant
 	pass
 
 print("Bismuth path = {}".format(bis_root))
+
+def get_cmc_info(alt_curr):
+
+	ch = "price_{}".format(alt_curr.lower())
+
+	try:
+		t = "https://api.coinmarketcap.com/v1/ticker/bismuth/?convert={}".format(alt_curr)
+		r = requests.get(t)
+		x = r.text
+		y = json.loads(x)
+		c_btc = y[0]['price_btc']
+		c_usd = "{:.2f}".format(float(y[0]['price_usd']))
+		c_cus = "{:.2f}".format(float(y[0][ch]))
+		# print( y )
+		s = "<p><b> LATEST PRICES: BTC = {} | USD = {} | {} = {}</b></p>".format(c_btc,str(c_usd),alt_curr,str(c_cus))
+		
+	except requests.exceptions.RequestException as e:
+		s = "Error: {}".format(e)
+
+	return s
+	
+def get_cmc_val(alt_curr):
+
+	ch = "price_{}".format(alt_curr.lower())
+
+	try:
+		t = "https://api.coinmarketcap.com/v1/ticker/bismuth/?convert={}".format(alt_curr)
+		r = requests.get(t)
+		x = r.text
+		y = json.loads(x)
+		s = float(y[0][ch])
+		
+	except requests.exceptions.RequestException as e:
+		s = "Error: {}".format(e)
+
+	return s
 
 def myoginfo():
 
@@ -231,8 +272,10 @@ def checkalias(myaddress):
 		goodname = "Test and Development Fund"
 	if myaddress == "edf2d63cdf0b6275ead22c9e6d66aa8ea31dc0ccb367fad2e7c08a25":
 		goodname = "Cryptopia"
+	if myaddress == "01d616b9df2a85a3e9df92d421a49217bad7a5a5ffc34cf1a095cb5a":
+		goodname = "Acc-Pool Mining"
 
-	logging.info("Tools DB: Check alias result: Address {} = {}".format(str(myaddress),goodname))
+	#logging.info("Tools DB: Check alias result: Address {} = {}".format(str(myaddress),goodname))
 
 	return goodname
 	
@@ -484,7 +527,7 @@ def getall():
 	c.execute("SELECT * FROM transactions ORDER BY block_height DESC, timestamp DESC LIMIT ?;", (front_display,))
 
 	myall = c.fetchall()
-
+	
 	c.close()
 	conn.close()
 	
@@ -551,6 +594,21 @@ def richones():
 	conn.close()
 
 	return rich_result
+	
+def get_alias(address):
+
+	conn = sqlite3.connect('tools.db')
+	conn.text_factory = str
+	c = conn.cursor()
+	c.execute("SELECT alias FROM richlist WHERE address=?;", (address,))
+	r_alias = c.fetchone()[0]
+	c.close()
+	conn.close()
+	
+	if not r_alias:
+		r_alias = ""
+		
+	return str(r_alias)
 	
 def get_sponsor():
 
@@ -686,19 +744,32 @@ def home():
 			color_cell = "#E8E8E8"
 		else:
 			color_cell = "white"
+
+		a_from = get_alias(str(x[2]))
+		if a_from == "":
+			a_from = str(x[2])
+		else:
+			a_from = "<b>{}</b>\n{}".format(a_from,str(x[2]))
+		if str(x[2]) == str(x[3]):
+			a_to = a_from
+		else:
+			a_to = get_alias(str(x[3]))
+			if a_to == "":
+				a_to = str(x[3])
+			else:
+				a_to = "<b>{}</b>\n{}".format(a_to,str(x[3]))
+						
 		thisview.append('<tr bgcolor ="{}">'.format(color_cell))
 		thisview.append('<td>{}</td>'.format(str(x[0])))
 		thisview.append('<td>{}'.format(str(time.strftime("%Y/%m/%d,%H:%M:%S", time.gmtime(float(x[1]))))))
-		thisview.append('<td>{}</td>'.format(str(x[2])))
-		thisview.append('<td>{}</td>'.format(str(x[3])))
+		thisview.append('<td>{}</td>'.format(a_from)) # from
+		thisview.append('<td>{}</td>'.format(a_to)) # to
 		thisview.append('<td>{}</td>'.format(str(x[4])))
 		thisview.append('<td>{}</td>'.format(str(x[7])))
 		thisview.append('<td>{}</td>'.format(str(x[8])))
 		thisview.append('<td>{}</td>'.format(str(x[9])))
-		thisview.append('<td>{}</td>'.format(str(x[10])))
 		thisview.append('</tr>\n')
 		i = i+1		
-	
 
 	#initial = my_head('table, th, td {border: 0;}')
 	initial = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
@@ -719,8 +790,13 @@ def home():
 	sponsor2 = get_sponsor()
 	initial = initial + sponsor2
 	initial.append('</td>\n')
+	initial.append('</tr><tr>\n')
+	initial.append('<td colspan="3" align="center" style="border:hidden;">\n')
+	cmcstats = get_cmc_info(cust_curr)
+	initial.append('{}'.format(cmcstats))
+	initial.append('</td>\n')
 	initial.append('</tr></tbody></table>\n')
-	initial.append('<table style="font-size: 75%">\n')
+	initial.append('<table style="font-size: 76%">\n')
 	initial.append('<tr>\n')
 	initial.append('<td><b>Block</b></td>\n')
 	initial.append('<td><b>Timestamp</b></td>\n')
@@ -730,7 +806,6 @@ def home():
 	initial.append('<td><b>Block Hash</b></td>\n')
 	initial.append('<td><b>Fee</b></td>\n')
 	initial.append('<td><b>Reward</b></td>\n')
-	initial.append('<td><b>Keep</b></td>\n')
 	initial.append('</tr>\n')
 	initial = initial + thisview
 	initial.append('</table>\n')
@@ -833,7 +908,7 @@ def ledger_form():
 	plotter.append('</table>\n')
 	plotter.append('</form>\n')
 	#plotter.append('</p>\n')
-	plotter.append('<p>The latest block: {} was found {} seconds ago</p>\n'.format(str(mylatest[0]),str(int(mylatest[1]))))
+	plotter.append('<p>The latest block: {} was found {} seconds ago at difficulty {}</p>\n'.format(str(mylatest[0]),str(int(mylatest[1])),str(mylatest[2])))
 	if hyper_limit > 1:
 		plotter.append('<p>The last Hyperblock was at block: {}</p>\n'.format(str(hyper_limit)))
 		plotter.append('<p>Queries for blocks before {} will not be found</p>\n'.format(str(hyper_limit)))
@@ -957,7 +1032,7 @@ def ledger_query():
 		view.append('<td>{}</td>'.format(str(x[7])))
 		view.append('<td>{}</td>'.format(str(x[8])))
 		view.append('<td>{}</td>'.format(str(x[9])))
-		view.append('<td>{}</td>'.format(str(x[10])))
+		#view.append('<td>{}</td>'.format(str(x[10])))
 		view.append('</tr>\n')
 		i = i+1
 	
@@ -971,7 +1046,7 @@ def ledger_query():
 	replot.append('<tr><th><label for="Submit Query">Click Submit to List Transactions</label></th><td><button id="Submit Query" name="Submit Query">Submit Query</button></td></tr>\n')
 	replot.append('</table>\n')
 	replot.append('</form>\n')
-	replot.append('<p>The latest block: {} was found {} seconds ago</p>\n'.format(str(mylatest[0]),str(int(mylatest[1]))))
+	replot.append('<p>The latest block: {} was found {} seconds ago at difficulty {}</p>\n'.format(str(mylatest[0]),str(int(mylatest[1])),str(mylatest[2])))
 	replot.append(extext)
 	replot.append('<table style="font-size: 70%">\n')
 	replot.append('<tr>\n')
@@ -983,7 +1058,7 @@ def ledger_query():
 	replot.append('<td><b>Block Hash</b></td>\n')
 	replot.append('<td><b>Fee</b></td>\n')
 	replot.append('<td><b>Reward</b></td>\n')
-	replot.append('<td><b>Keep</b></td>\n')
+	#replot.append('<td><b>Keep</b></td>\n')
 	replot.append('</tr>\n')
 	replot = replot + view
 	replot.append('</table>\n')
@@ -1031,11 +1106,13 @@ def sponsorinfo():
 
 	return starter.encode("utf-8")
 
-@app.route('/richest')
-def richest():
+@app.route('/richest', methods=['GET'])
+def richest_form():
 
+	def_curr = "BTC"
 	rawall = richones()
 	all = []
+	conv_curr = get_cmc_val(def_curr)
 	
 	for r in rawall:
 		all.append((r[0],float(r[1]),r[2]))
@@ -1060,7 +1137,8 @@ def richest():
 				view.append("<td>{}</td>".format(str(j)))
 				view.append("<td>{}</td>".format(str(x[0])))
 				view.append("<td>{}</td>".format(str(x[2])))
-				view.append("<td>{:.8f}</td>".format(x[1]))				
+				view.append("<td>{:.8f}</td>".format(x[1]))
+				view.append("<td>{:.2f}</td>".format((x[1]*conv_curr)))				
 				j = j+1
 				view.append("</tr>\n")
 		i = i+1
@@ -1069,15 +1147,110 @@ def richest():
 	
 	lister.append('<h2>Bismuth Rich List</h2>\n')
 	lister.append('<p><b>List of all Bismuth address balances</b></p>\n')
-	#lister.append('<p><b>Hint: Click on an address to see more detail</b></p>\n')
 	lister.append('<p>Note: this page may be up to 45 mins behind</p>\n')
 	lister.append('<p></p>\n')
-	lister.append('<table style="width:60%" bgcolor="white">\n')
+	lister.append('<form method="post" action="/richest">\n')
+	lister.append('<table>\n')
+	lister.append('<tr><th><label for="my_curr">Choose currency</label></th>')
+	lister.append('<td><select name="my_curr">\n')
+	lister.append('<option value="BTC">BTC</option>\n')
+	lister.append('<option value="USD">USD</option>\n')
+	lister.append('<option value="EUR">EUR</option>\n')
+	lister.append('<option value="GBP">GBP</option>\n')
+	lister.append('<option value="CNY">CNY</option>\n')
+	lister.append('<option value="AUD">AUD</option>\n')
+	lister.append('</select></td></tr>\n')
+	lister.append('<tr><th><label for="Submit Query">Click Go</label></th><td><button id="Submit Query" name="Submit Query">Go</button></td></tr>\n')
+	lister.append('</table>\n')
+	lister.append('</form>\n')
+	lister.append('<table style="width:65%" bgcolor="white">\n')
+	lister.append('<p></p>\n')
 	lister.append('<tr>\n')
 	lister.append('<td bgcolor="#D0F7C3"><b>Rank</b></td>\n')
 	lister.append('<td bgcolor="#D0F7C3"><b>Address</b></td>\n')
 	lister.append('<td bgcolor="#D0F7C3"><b>Alias</b></td>\n')
-	lister.append('<td bgcolor="#D0F7C3"><b>Balance</b></td>\n')
+	lister.append('<td bgcolor="#D0F7C3"><b>Balance (BIS)</b></td>\n')
+	lister.append('<td bgcolor="#D0F7C3"><b>Balance ({})</b></td>\n'.format(def_curr))
+	lister.append('</tr>\n')
+	lister = lister + view
+	lister.append('</table>\n')
+	lister.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2017</p>')
+	lister.append('</center>\n')
+	lister.append('</body>\n')
+	lister.append('</html>')
+
+	html = "" + str(''.join(lister))
+
+	return html.encode("utf-8")
+
+@app.route('/richest', methods=['POST'])
+def richest_result():
+
+	try:
+		def_curr = request.form.get('my_curr')
+	except:
+		def_curr = "BTC"
+	rawall = richones()
+	all = []
+	conv_curr = get_cmc_val(def_curr)
+	
+	for r in rawall:
+		all.append((r[0],float(r[1]),r[2]))
+			
+	all = sorted(all, key=lambda address: address[1], reverse=True)
+	
+	view = []
+	i = 0
+	j = 1
+	for x in all:
+		thisrich = str(x[0])
+		if len(thisrich) == 56:
+			if j % 2 == 0:
+				color_cell = "white"
+			else:
+				color_cell = "#E8E8E8"
+			amt = "{:.8f}".format(x[1])
+			if amt == "0.00000000" or amt == "-0.00000000":
+				pass
+			else:
+				view.append("<tr bgcolor ='{}'>".format(color_cell))
+				view.append("<td>{}</td>".format(str(j)))
+				view.append("<td>{}</td>".format(str(x[0])))
+				view.append("<td>{}</td>".format(str(x[2])))
+				view.append("<td>{:.8f}</td>".format(x[1]))
+				view.append("<td>{:.2f}</td>".format((x[1]*conv_curr)))				
+				j = j+1
+				view.append("</tr>\n")
+		i = i+1
+	
+	lister = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
+	
+	lister.append('<h2>Bismuth Rich List</h2>\n')
+	lister.append('<p><b>List of all Bismuth address balances</b></p>\n')
+	lister.append('<p>Note: this page may be up to 45 mins behind</p>\n')
+	lister.append('<p></p>\n')
+	lister.append('<form method="post" action="/richest">\n')
+	lister.append('<table>\n')
+	lister.append('<tr><th><label for="my_curr">Choose currency</label></th>')
+	lister.append('<td><select name="my_curr">\n')
+	lister.append('<option value="BTC">BTC</option>\n')
+	lister.append('<option value="USD">USD</option>\n')
+	lister.append('<option value="EUR">EUR</option>\n')
+	lister.append('<option value="GBP">GBP</option>\n')
+	lister.append('<option value="CNY">CNY</option>\n')
+	lister.append('<option value="AUD">AUD</option>\n')
+	lister.append('</select></td></tr>\n')
+	lister.append('<tr><th><label for="Submit Query">Click Go</label></th><td><button id="Submit Query" name="Submit Query">Go</button></td></tr>\n')
+	lister.append('</table>\n')
+	lister.append('</form>\n')
+	lister.append('<table style="width:65%" bgcolor="white">\n')
+	lister.append('<p></p>\n')
+	lister.append('<tr>\n')
+	lister.append('<td bgcolor="#D0F7C3"><b>Rank</b></td>\n')
+	lister.append('<td bgcolor="#D0F7C3"><b>Address</b></td>\n')
+	lister.append('<td bgcolor="#D0F7C3"><b>Alias</b></td>\n')
+	lister.append('<td bgcolor="#D0F7C3"><b>Balance (BIS)</b></td>\n')
+	lister.append('<td bgcolor="#D0F7C3"><b>Balance ({})</b></td>\n'.format(def_curr))
 	lister.append('</tr>\n')
 	lister = lister + view
 	lister.append('</table>\n')

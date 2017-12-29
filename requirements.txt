@@ -1,4 +1,4 @@
 Flask
-BeautifulSoup
-urllib
+BeautifulSoup4
 tornado
+requests

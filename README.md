@@ -73,6 +73,13 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 
 Changes
 =======
+Version 4.2.0 29/12/2017
+------------------------
+
+1. Updates to information display
+2. Currency display and conversion on richlist
+3. No compiled releases in this version
+
 Version 4.1.0 03/12/2017
 ------------------------
 
