@@ -1,6 +1,6 @@
 # Bismuth Tools Web Edition
-# Version 4.2.0
-# Date 29/12/2017
+# Version 4.2.1
+# Date 30/12/2017
 # Copyright Maccaspacca 2017
 # Copyright Hclivess 2016 to 2017
 # Author Maccaspacca
@@ -597,15 +597,18 @@ def richones():
 	
 def get_alias(address):
 
-	conn = sqlite3.connect('tools.db')
-	conn.text_factory = str
-	c = conn.cursor()
-	c.execute("SELECT alias FROM richlist WHERE address=?;", (address,))
-	r_alias = c.fetchone()[0]
-	c.close()
-	conn.close()
-	
-	if not r_alias:
+	try:
+		conn = sqlite3.connect('tools.db')
+		conn.text_factory = str
+		c = conn.cursor()
+		c.execute("SELECT alias FROM richlist WHERE address=?;", (address,))
+		r_alias = c.fetchone()[0]
+		c.close()
+		conn.close()
+		
+		if not r_alias:
+			r_alias = ""
+	except:
 		r_alias = ""
 		
 	return str(r_alias)
