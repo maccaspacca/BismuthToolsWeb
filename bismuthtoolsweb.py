@@ -1,8 +1,8 @@
 # Bismuth Tools Web Edition
-# Version 4.2.1
-# Date 30/12/2017
-# Copyright Maccaspacca 2017
-# Copyright Hclivess 2016 to 2017
+# Version 4.2.2
+# Date 18/01/2018
+# Copyright Maccaspacca 2017, 2018
+# Copyright Hclivess 2016 to 2018
 # Author Maccaspacca
 
 from tornado.wsgi import WSGIContainer
@@ -10,6 +10,8 @@ from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 
 from flask import Flask, request
+from flask import Markup
+from flask import render_template
 app = Flask(__name__)
 
 import json, sqlite3, time, re, os
@@ -17,20 +19,8 @@ from multiprocessing import Process
 import multiprocessing
 from bs4 import BeautifulSoup
 import logging, random, platform, requests
-
-try:
-    # For Python 3.0 and later
-	import configparser as cp
-except ImportError:
-    # Fall back to Python 2's ConfigParser
-	import ConfigParser as cp
-
-try:
-    # For Python 3.0 and later
-    from urllib.request import urlopen
-except ImportError:
-    # Fall back to Python 2's urllib2
-    from urllib2 import urlopen
+import configparser as cp
+from urllib.request import urlopen
 	
 # globals
 global my_os
@@ -65,6 +55,14 @@ try:
 	cust_curr = config.get('My Sponsors', 'currency')
 except:
 	cust_curr = "EUR"
+try:
+	bis_limit = int(config.get('My Bismuth', 'bis_limit'))
+except:
+	bis_limit = 1
+try:
+	diff_ch = int(config.get('My Charts', 'diff'))
+except:
+	diff_ch = 50
 
 logging.info("Config file read completed")
 config = None
@@ -271,7 +269,7 @@ def checkalias(myaddress):
 	if myaddress == "4edadac9093d9326ee4b17f869b14f1a2534f96f9c5d7b48dc9acaed":
 		goodname = "Test and Development Fund"
 	if myaddress == "edf2d63cdf0b6275ead22c9e6d66aa8ea31dc0ccb367fad2e7c08a25":
-		goodname = "Cryptopia"
+		goodname = "Cryptopia Exchange"
 	if myaddress == "01d616b9df2a85a3e9df92d421a49217bad7a5a5ffc34cf1a095cb5a":
 		goodname = "Acc-Pool Mining"
 
@@ -434,7 +432,10 @@ def updatedb():
 		m_alias = checkalias(str(x[0]))
 		print(str(x[0]))
 		#print(m_alias)
-		m.execute('INSERT INTO richlist VALUES (?,?,?)', (x[0],btemp[4],m_alias))
+		amirich = float(btemp[4])
+		if amirich > bis_limit:
+			#print(str(amirich))
+			m.execute('INSERT INTO richlist VALUES (?,?,?)', (x[0],btemp[4],m_alias))
 
 		if float(btemp[2]) > 0:
 			temp_miner = str(x[0])
@@ -718,6 +719,7 @@ def my_head(bo):
 	if mysponsor:
 		mhead.append('<li><a href="/sponsorinfo">Sponsors</a></li>\n')
 	mhead.append('<li><a href="/apihelp">API</a></li>\n')
+	mhead.append('<li><a href="/charts">Charts</a></li>\n')
 	mhead.append('</ul>\n')
 	mhead.append('</td></tr>\n')
 	mhead.append('</table>\n')
@@ -820,7 +822,30 @@ def home():
 	starter = "" + str(''.join(initial))
 
 	return starter.encode("utf-8")
-		
+	
+@app.route('/diff_chart')
+def chart():
+
+	conn = sqlite3.connect(bis_root)
+	conn.text_factory = str
+	c = conn.cursor()
+	c.execute("SELECT * FROM misc ORDER BY block_height DESC LIMIT ?;", (diff_ch,))
+	d_result = c.fetchall()
+	b = []
+	d = []
+	d_result = list(reversed(d_result))
+	for v in d_result:
+		b.append(v[0])
+		d.append(float(v[1]))
+	
+	c.close()
+	conn.close()	
+	
+	legend = 'Difficulty'
+
+	return render_template('chart.html', values=d, labels=b, legend=legend)
+	
+
 @app.route('/minerquery', methods=['GET'])
 def minerquery():
 
@@ -1149,7 +1174,7 @@ def richest_form():
 	lister = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
 	
 	lister.append('<h2>Bismuth Rich List</h2>\n')
-	lister.append('<p><b>List of all Bismuth address balances</b></p>\n')
+	lister.append('<p><b>List of all Bismuth addresses with more than {} BIS</b></p>\n'.format(str(bis_limit)))
 	lister.append('<p>Note: this page may be up to 45 mins behind</p>\n')
 	lister.append('<p></p>\n')
 	lister.append('<form method="post" action="/richest">\n')
@@ -1313,6 +1338,35 @@ def apihelp():
 	initial.append('<p></p>\n')
 	initial.append('<p align="left">Parameter1: diffhist</p>\n')
 	initial.append('<p align="left">--->Parameter2: number of blocks, greater than 10 <i>(gets the difficulty history for a specific number of previous blocks)</i></p>\n')
+	initial.append('</td>\n')
+	initial.append('<td align="center" style="border:hidden;">')
+	initial.append('<p></p>')
+	initial.append('</td>\n')
+	initial.append('</tr></tbody></table>\n')
+	initial.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2017</p>')
+	initial.append('</center>\n')
+	initial.append('</body>\n')
+	initial.append('</html>')
+
+	starter = "" + str(''.join(initial))
+
+	return starter.encode("utf-8")
+	
+@app.route('/charts')
+def mycharts():
+
+	#initial = my_head('table, th, td {border: 0;}')
+	initial = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
+
+	initial.append('<table ><tbody><tr>\n')
+	initial.append('<td align="center" style="border:hidden;">')
+	initial.append('<p></p>')
+	initial.append('</td>\n')
+	initial.append('<td align="center" style="border:hidden;">\n')
+	initial.append('<h1>Bismuth Cryptocurrency</h1>\n')
+	initial.append('<h2>Information Charts</h2>\n')
+	initial.append('<p></p>')
+	initial.append('<h3><a href="/diff_chart">Difficulty Chart</a></h3>\n')		
 	initial.append('</td>\n')
 	initial.append('<td align="center" style="border:hidden;">')
 	initial.append('<p></p>')
@@ -1673,7 +1727,9 @@ urls = (
 	'/richest', 'richest',
 	'/sponsorinfo', 'sponsorinfo',
 	'/api', 'api',
-	'/apihelp', 'API'
+	'/apihelp', 'API',
+	'/charts', 'Charts',
+	'/diff_chart', 'Difficulty'
 )
 
 if __name__ == "__main__":

@@ -1,2 +1,0 @@
-Python 3.5.3
-Full Bismuth node and associated dependencies - not in hyperdb mode

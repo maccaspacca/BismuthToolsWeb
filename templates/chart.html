@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel = "icon" href = "static/explorer.ico" type = "image/x-icon" />
+<style>
+h1, h2, p, li, td, label {font-family: Verdana;}
+body {font-size: 75%;}
+ul {list-style-type: none;margin: 0;padding: 0;overflow: hidden;background-color: #333;}
+li {float: left;}
+li a {display: inline-block;color: white;text-align: center;padding: 14px 16px;text-decoration: none;}
+li a:hover {background-color: #111;}
+.btn-link{border:none;outline:none;background:none;cursor:pointer;color:#0000EE;padding:0;text-decoration:underline;font-family:inherit;font-size:inherit;}
+table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}
+</style>
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Bismuth Tools Web Edition" />
+<meta property="og:description" content="Bismuth Cryptocurrency tools with block explorer, blockchain query, miner information and richlist" />
+<meta property="og:url" content="http://bismuth.cz/" />
+<meta property="og:site_name" content="Bismuth Tools" />
+<meta property="og:image" content="https://i1.wp.com/bismuth.cz/wp-content/uploads/2017/03/cropped-mesh2-2.png" />
+<meta property="og:image:width" content="200" />
+<meta property="og:image:height" content="200" />
+<meta property="og:locale" content="en_US" />
+<meta property="xbm:version" content="201" />
+<meta name="description" content="Bismuth Cryptocurrency tools with block explorer, blockchain query, miner information and richlist" />
+<title>Bismuth Tools Web Edition</title>
+<!-- import plugin script -->
+<script src='static/Chart.min.js'></script>
+</head>
+<body background="static/explorer_bg.png">
+<center>
+<table style="border:0">
+<tr style="border:0"><td style="border:0">
+<ul>
+<li><a href="">Menu:</a></li>
+<li><a href="/">Home</a></li>
+<li><a href="/ledgerquery">Ledger Query</a></li>
+<li><a href="/minerquery">Miner Stats</a></li>
+<li><a href="/richest">Rich List</a></li>
+<li><a href="/sponsorinfo">Sponsors</a></li>
+<li><a href="/apihelp">API</a></li>
+<li><a href="/charts">Charts</a></li>
+</ul>
+</td></tr>
+</table>
+    <h1>Recent Bismuth Difficulty Chart</h1>
+    <!-- bar chart canvas element -->
+    <canvas id="myChart" width="600" height="400"></canvas>
+    <p id="caption"></p>
+
+    <script>
+      // Global parameters:
+      // do not resize the chart canvas when its container does (keep at 600x400px)
+      Chart.defaults.global.responsive = false;
+
+      // define the chart data
+      var chartData = {
+        labels : [{% for item in labels %}
+                   "{{item}}",
+                  {% endfor %}],
+        datasets : [{
+            label: '{{ legend }}',
+            fill: true,
+            lineTension: 0.1,
+            backgroundColor: "rgba(75,192,192,0.4)",
+            borderColor: "rgba(75,192,192,1)",
+            borderCapStyle: 'butt',
+            borderDash: [],
+            borderDashOffset: 0.0,
+            borderJoinStyle: 'miter',
+            pointBorderColor: "rgba(75,192,192,1)",
+            pointBackgroundColor: "#fff",
+            pointBorderWidth: 1,
+            pointHoverRadius: 5,
+            pointHoverBackgroundColor: "rgba(75,192,192,1)",
+            pointHoverBorderColor: "rgba(220,220,220,1)",
+            pointHoverBorderWidth: 2,
+            pointRadius: 1,
+            pointHitRadius: 10,
+            data : [{% for item in values %}
+                      {{item}},
+                    {% endfor %}],
+            spanGaps: false
+        }]
+      }
+
+      // get chart canvas
+      var ctx = document.getElementById("myChart").getContext("2d");
+
+      // create the chart using the chart canvas
+      var myChart = new Chart(ctx, {
+        type: 'line',
+        data: chartData,
+      });
+    </script>
+
+   </center>
+  </body>
+</html>

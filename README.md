@@ -73,6 +73,14 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 
 Changes
 =======
+Version 4.2.2 18/01/2018
+------------------------
+
+1. Restrict richlist to those with BIS balance greater than bis_limit in toolsconfig.ini - default 1
+2. Begin display of information charts - initially most recent difficulty (toolsconfig.ini > My Charts > diff =)
+3. Charts on html template as precursor to future template use.
+4. No compiled releases in this version
+
 Version 4.2.0 29/12/2017
 ------------------------
 
