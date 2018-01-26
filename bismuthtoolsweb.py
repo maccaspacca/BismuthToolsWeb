@@ -1,6 +1,6 @@
 # Bismuth Tools Web Edition
-# Version 4.2.2
-# Date 18/01/2018
+# Version 4.2.3
+# Date 26/01/2018
 # Copyright Maccaspacca 2017, 2018
 # Copyright Hclivess 2016 to 2018
 # Author Maccaspacca
@@ -15,8 +15,7 @@ from flask import render_template
 app = Flask(__name__)
 
 import json, sqlite3, time, re, os
-from multiprocessing import Process
-import multiprocessing
+import threading
 from bs4 import BeautifulSoup
 import logging, random, platform, requests
 import configparser as cp
@@ -84,6 +83,7 @@ else: # if its not windows then probably a linux or unix variant
 
 print("Bismuth path = {}".format(bis_root))
 
+
 def get_cmc_info(alt_curr):
 
 	ch = "price_{}".format(alt_curr.lower())
@@ -115,11 +115,11 @@ def get_cmc_val(alt_curr):
 		y = json.loads(x)
 		s = float(y[0][ch])
 		
-	except requests.exceptions.RequestException as e:
-		s = "Error: {}".format(e)
+	except:
+		s = 0.00000001
 
 	return s
-
+	
 def myoginfo():
 
 	doda = []
@@ -462,12 +462,48 @@ def updatedb():
 
 def buildtoolsdb():
 
+	global home_stats
+	global cmc_vals
+	cmc_vals = []
+	home_stats = get_cmc_info(cust_curr)
+	cmc_vals.append(get_cmc_val("BTC"))
+	time.sleep(1)
+	cmc_vals.append(get_cmc_val("USD"))
+	time.sleep(1)
+	cmc_vals.append(get_cmc_val("EUR"))
+	time.sleep(1)
+	cmc_vals.append(get_cmc_val("GBP"))
+	time.sleep(1)
+	cmc_vals.append(get_cmc_val("CNY"))
+	time.sleep(1)
+	cmc_vals.append(get_cmc_val("AUD"))
+	
 	updatedb()
 	
+	i = 0
+	
 	while True:
-		print("Tools DB: Waiting for 30 minutes.......")
-		time.sleep(1800)
-		bobble = updatedb()
+	
+		print("Stats: Waiting for 5 minutes.......")
+		time.sleep(300)
+		cmc_vals = []
+		home_stats = get_cmc_info(cust_curr)
+		cmc_vals.append(get_cmc_val("BTC"))
+		time.sleep(1)
+		cmc_vals.append(get_cmc_val("USD"))
+		time.sleep(1)
+		cmc_vals.append(get_cmc_val("EUR"))
+		time.sleep(1)
+		cmc_vals.append(get_cmc_val("GBP"))
+		time.sleep(1)
+		cmc_vals.append(get_cmc_val("CNY"))
+		time.sleep(1)
+		cmc_vals.append(get_cmc_val("AUD"))
+		i +=1
+		if i == 6:
+			bobble = updatedb()
+			print("Tools DB: Waiting for 30 minutes.......")
+			i = 0
 
 def checkstart():
 
@@ -797,7 +833,8 @@ def home():
 	initial.append('</td>\n')
 	initial.append('</tr><tr>\n')
 	initial.append('<td colspan="3" align="center" style="border:hidden;">\n')
-	cmcstats = get_cmc_info(cust_curr)
+	#cmcstats = get_cmc_info(cust_curr)
+	cmcstats = home_stats
 	initial.append('{}'.format(cmcstats))
 	initial.append('</td>\n')
 	initial.append('</tr></tbody></table>\n')
@@ -814,7 +851,8 @@ def home():
 	initial.append('</tr>\n')
 	initial = initial + thisview
 	initial.append('</table>\n')
-	initial.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2017</p>')
+	initial.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p>')
+	initial.append('<p>Price information courtesy of coinmarketcap.com</p>')
 	initial.append('</center>\n')
 	initial.append('</body>\n')
 	initial.append('</html>')
@@ -911,7 +949,7 @@ def minerquery():
 	lister.append('</tr>\n')
 	lister = lister + view
 	lister.append('</table>\n')
-	lister.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2017</p>')
+	lister.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p>')
 	lister.append('</center>\n')
 	lister.append('</body>\n')
 	lister.append('</html>')
@@ -1090,7 +1128,7 @@ def ledger_query():
 	replot.append('</tr>\n')
 	replot = replot + view
 	replot.append('</table>\n')
-	replot.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2017</p>')
+	replot.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p>')
 	replot.append('</center>\n')
 	replot.append('</body>\n')
 	replot.append('</html>')
@@ -1125,7 +1163,7 @@ def sponsorinfo():
 	initial.append('<p></p>')
 	initial.append('</td>\n')
 	initial.append('</tr></tbody></table>\n')
-	initial.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2017</p>')
+	initial.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p>')
 	initial.append('</center>\n')
 	initial.append('</body>\n')
 	initial.append('</html>')
@@ -1137,10 +1175,10 @@ def sponsorinfo():
 @app.route('/richest', methods=['GET'])
 def richest_form():
 
-	def_curr = "BTC"
+	def_curr = "0"
 	rawall = richones()
 	all = []
-	conv_curr = get_cmc_val(def_curr)
+	conv_curr = cmc_vals[int(def_curr)]
 	
 	for r in rawall:
 		all.append((r[0],float(r[1]),r[2]))
@@ -1181,12 +1219,12 @@ def richest_form():
 	lister.append('<table>\n')
 	lister.append('<tr><th><label for="my_curr">Choose currency</label></th>')
 	lister.append('<td><select name="my_curr">\n')
-	lister.append('<option value="BTC">BTC</option>\n')
-	lister.append('<option value="USD">USD</option>\n')
-	lister.append('<option value="EUR">EUR</option>\n')
-	lister.append('<option value="GBP">GBP</option>\n')
-	lister.append('<option value="CNY">CNY</option>\n')
-	lister.append('<option value="AUD">AUD</option>\n')
+	lister.append('<option value="0">BTC</option>\n')
+	lister.append('<option value="1">USD</option>\n')
+	lister.append('<option value="2">EUR</option>\n')
+	lister.append('<option value="3">GBP</option>\n')
+	lister.append('<option value="4">CNY</option>\n')
+	lister.append('<option value="5">AUD</option>\n')
 	lister.append('</select></td></tr>\n')
 	lister.append('<tr><th><label for="Submit Query">Click Go</label></th><td><button id="Submit Query" name="Submit Query">Go</button></td></tr>\n')
 	lister.append('</table>\n')
@@ -1202,7 +1240,8 @@ def richest_form():
 	lister.append('</tr>\n')
 	lister = lister + view
 	lister.append('</table>\n')
-	lister.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2017</p>')
+	lister.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p>')
+	lister.append('<p>Price information courtesy of coinmarketcap.com</p>')
 	lister.append('</center>\n')
 	lister.append('</body>\n')
 	lister.append('</html>')
@@ -1217,10 +1256,10 @@ def richest_result():
 	try:
 		def_curr = request.form.get('my_curr')
 	except:
-		def_curr = "BTC"
+		def_curr = "0"
 	rawall = richones()
 	all = []
-	conv_curr = get_cmc_val(def_curr)
+	conv_curr = cmc_vals[int(def_curr)]
 	
 	for r in rawall:
 		all.append((r[0],float(r[1]),r[2]))
@@ -1261,12 +1300,12 @@ def richest_result():
 	lister.append('<table>\n')
 	lister.append('<tr><th><label for="my_curr">Choose currency</label></th>')
 	lister.append('<td><select name="my_curr">\n')
-	lister.append('<option value="BTC">BTC</option>\n')
-	lister.append('<option value="USD">USD</option>\n')
-	lister.append('<option value="EUR">EUR</option>\n')
-	lister.append('<option value="GBP">GBP</option>\n')
-	lister.append('<option value="CNY">CNY</option>\n')
-	lister.append('<option value="AUD">AUD</option>\n')
+	lister.append('<option value="0">BTC</option>\n')
+	lister.append('<option value="1">USD</option>\n')
+	lister.append('<option value="2">EUR</option>\n')
+	lister.append('<option value="3">GBP</option>\n')
+	lister.append('<option value="4">CNY</option>\n')
+	lister.append('<option value="5">AUD</option>\n')
 	lister.append('</select></td></tr>\n')
 	lister.append('<tr><th><label for="Submit Query">Click Go</label></th><td><button id="Submit Query" name="Submit Query">Go</button></td></tr>\n')
 	lister.append('</table>\n')
@@ -1282,7 +1321,7 @@ def richest_result():
 	lister.append('</tr>\n')
 	lister = lister + view
 	lister.append('</table>\n')
-	lister.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2017</p>')
+	lister.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p>')
 	lister.append('</center>\n')
 	lister.append('</body>\n')
 	lister.append('</html>')
@@ -1343,7 +1382,7 @@ def apihelp():
 	initial.append('<p></p>')
 	initial.append('</td>\n')
 	initial.append('</tr></tbody></table>\n')
-	initial.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2017</p>')
+	initial.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p>')
 	initial.append('</center>\n')
 	initial.append('</body>\n')
 	initial.append('</html>')
@@ -1372,7 +1411,7 @@ def mycharts():
 	initial.append('<p></p>')
 	initial.append('</td>\n')
 	initial.append('</tr></tbody></table>\n')
-	initial.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2017</p>')
+	initial.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p>')
 	initial.append('</center>\n')
 	initial.append('</body>\n')
 	initial.append('</html>')
@@ -1733,8 +1772,8 @@ urls = (
 )
 
 if __name__ == "__main__":
-	multiprocessing.freeze_support()
-	background_thread = Process(target=buildtoolsdb)
+
+	background_thread = threading.Thread(target=buildtoolsdb)
 	background_thread.daemon = True
 	background_thread.start()
 	logging.info("Databases: Start Thread")

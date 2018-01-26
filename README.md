@@ -73,6 +73,12 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 
 Changes
 =======
+Version 4.2.3 26/01/2018
+------------------------
+
+1. QF001012018 - fix CMC stats query. Now made every 5 minutes rather than on demand.
+2. No compiled releases in this version
+
 Version 4.2.2 18/01/2018
 ------------------------
 
