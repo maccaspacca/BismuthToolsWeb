@@ -73,6 +73,17 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 
 Changes
 =======
+Version 5.0.0 01/02/2018
+------------------------
+
+Major version to aid transaction troubleshooting by exchanges
+
+1. Replacement of Block Hash in ledger query with Transaction ID (this is based on first 56 characters of signature)
+2. Transaction ID can be searched in ledger query
+3. New feature to display transaction details bu clicking block number in ledger query results
+4. Minor look and feel changes
+5. No compiled releases in this version
+
 Version 4.2.3 26/01/2018
 ------------------------
 

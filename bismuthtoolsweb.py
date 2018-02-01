@@ -1,6 +1,6 @@
 # Bismuth Tools Web Edition
-# Version 4.2.3
-# Date 26/01/2018
+# Version 5.0.0
+# Date 01/02/2018
 # Copyright Maccaspacca 2017, 2018
 # Copyright Hclivess 2016 to 2018
 # Author Maccaspacca
@@ -27,6 +27,9 @@ global bis_root
 global myaddress
 global myrate
 global mysponsor
+global disp_curr
+
+disp_curr = ["BTC","USD","EUR","GBP","CNY","AUD"]
 
 logging.basicConfig(level=logging.INFO, 
                     filename='toolsdb.log', # log to this file
@@ -582,19 +585,22 @@ def get_open(thisblock,thisopen):
 	conn.close()
 	
 	return myopen
+	
 
 def test(testString):
 
-	if (re.search('[abcdef]',testString)):
-		if len(testString) == 56:
+	if len(testString) == 56:
+		if (re.search('[abcdef]',testString)):
 			test_result = 1
 		else:
 			test_result = 3
+
 	elif testString.isdigit() == True:
 		test_result = 2
 	else:
 		test_result = 3
-		
+	
+	#print(test_result)
 	return test_result
 	
 def s_test(testString):
@@ -969,7 +975,7 @@ def ledger_form():
 	plotter.append('<p>Get a List of Transactions</p>\n')
 	plotter.append('<form method="post" action="/ledgerquery">\n')
 	plotter.append('<table>\n')
-	plotter.append('<tr><th><label for="block">Enter a Block Number, Block Hash or Address</label></th><td><input type="text" id="block" name="block" size="58"/></td></tr>\n')
+	plotter.append('<tr><th><label for="block">Enter a Block Number, txid, Hash or Address</label></th><td><input type="text" id="block" name="block" size="58"/></td></tr>\n')
 	plotter.append('<tr><th><label for="Submit Query">Click Submit to List Transactions</label></th><td><button id="Submit Query" name="Submit Query">Submit Query</button></td></tr>\n')
 	plotter.append('</table>\n')
 	plotter.append('</form>\n')
@@ -998,8 +1004,8 @@ def ledger_query():
 	if not myblock:
 		myblock = "0"
 	
-	if not myblock.isalnum():
-		myblock = "0"
+	#if not myblock.isalnum():
+		#myblock = "0"
 		#print("has dodgy characters but now fixed")
 	
 	my_type = test(myblock)
@@ -1043,9 +1049,20 @@ def ledger_query():
 			conn.close()
 		
 			if not all:
-				extext = "<p style='color:#C70039'>Error !!! Nothing found for the address or block hash you entered</p>"
-			else:
-				extext = "<p>Transaction found for block hash</p>"
+			
+				conn = sqlite3.connect(bis_root)
+				c = conn.cursor()
+				c.execute("SELECT * FROM transactions WHERE instr(signature, ?) > 0;",(str(myblock),))
+
+				all = c.fetchall()
+				
+				c.close()
+				conn.close()
+				
+				if not all:				
+					extext = "<p style='color:#C70039'>Error !!! Nothing found for the address, txid or hash you entered</p>"
+				else:
+					extext = "<p>Transaction found for ID given</p>"
 	
 	if my_type == 2:
 	
@@ -1089,16 +1106,17 @@ def ledger_query():
 			color_cell = "#E8E8E8"
 		else:
 			color_cell = "white"
+		det_link = "/details?mydetail={}:{}:{}:{}".format(str(x[0]),str(x[2]),str(x[3]),str(x[4]))
 		view.append('<tr bgcolor ="{}">'.format(color_cell))
-		view.append('<td>{}</td>'.format(str(x[0])))
+		view.append('<td><a href="{}">{}</a></td>'.format(det_link,str(x[0])))
 		view.append('<td>{}'.format(str(time.strftime("%Y/%m/%d,%H:%M:%S", time.gmtime(float(x[1]))))))
 		view.append('<td>{}</td>'.format(str(x[2])))
 		view.append('<td>{}</td>'.format(str(x[3])))
 		view.append('<td>{}</td>'.format(str(x[4])))
-		view.append('<td>{}</td>'.format(str(x[7])))
+		view.append('<td>{}</td>'.format(str(x[5][:56])))
 		view.append('<td>{}</td>'.format(str(x[8])))
 		view.append('<td>{}</td>'.format(str(x[9])))
-		#view.append('<td>{}</td>'.format(str(x[10])))
+		view.append('<td>{}</td>'.format(str(x[11][:20])))
 		view.append('</tr>\n')
 		i = i+1
 	
@@ -1108,11 +1126,12 @@ def ledger_query():
 	replot.append('<p>Get a List of Transactions</p>\n')
 	replot.append('<form method="post" action="/ledgerquery">\n')
 	replot.append('<table>\n')
-	replot.append('<tr><th><label for="block">Enter a Block Number, Block Hash or Address</label></th><td><input type="text" id="block" name="block" size="58"/></td></tr>\n')
+	replot.append('<tr><th><label for="block">Enter a Block Number, txid, Hash or Address</label></th><td><input type="text" id="block" name="block" size="58"/></td></tr>\n')
 	replot.append('<tr><th><label for="Submit Query">Click Submit to List Transactions</label></th><td><button id="Submit Query" name="Submit Query">Submit Query</button></td></tr>\n')
 	replot.append('</table>\n')
 	replot.append('</form>\n')
 	replot.append('<p>The latest block: {} was found {} seconds ago at difficulty {}</p>\n'.format(str(mylatest[0]),str(int(mylatest[1])),str(mylatest[2])))
+	replot.append('<p>Click on a block number to get transaction details</p>\n')
 	replot.append(extext)
 	replot.append('<table style="font-size: 70%">\n')
 	replot.append('<tr>\n')
@@ -1121,10 +1140,10 @@ def ledger_query():
 	replot.append('<td><b>From</b></td>\n')
 	replot.append('<td><b>To</b></td>\n')
 	replot.append('<td><b>Amount</b></td>\n')
-	replot.append('<td><b>Block Hash</b></td>\n')
+	replot.append('<td><b>Transaction ID (txid)</b></td>\n')
 	replot.append('<td><b>Fee</b></td>\n')
 	replot.append('<td><b>Reward</b></td>\n')
-	#replot.append('<td><b>Keep</b></td>\n')
+	replot.append('<td><b>Openfield</b></td>\n')
 	replot.append('</tr>\n')
 	replot = replot + view
 	replot.append('</table>\n')
@@ -1208,7 +1227,7 @@ def richest_form():
 				j = j+1
 				view.append("</tr>\n")
 		i = i+1
-	
+		
 	lister = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
 	
 	lister.append('<h2>Bismuth Rich List</h2>\n')
@@ -1236,7 +1255,7 @@ def richest_form():
 	lister.append('<td bgcolor="#D0F7C3"><b>Address</b></td>\n')
 	lister.append('<td bgcolor="#D0F7C3"><b>Alias</b></td>\n')
 	lister.append('<td bgcolor="#D0F7C3"><b>Balance (BIS)</b></td>\n')
-	lister.append('<td bgcolor="#D0F7C3"><b>Balance ({})</b></td>\n'.format(def_curr))
+	lister.append('<td bgcolor="#D0F7C3"><b>Balance ({})</b></td>\n'.format(disp_curr[int(def_curr)]))
 	lister.append('</tr>\n')
 	lister = lister + view
 	lister.append('</table>\n')
@@ -1317,7 +1336,7 @@ def richest_result():
 	lister.append('<td bgcolor="#D0F7C3"><b>Address</b></td>\n')
 	lister.append('<td bgcolor="#D0F7C3"><b>Alias</b></td>\n')
 	lister.append('<td bgcolor="#D0F7C3"><b>Balance (BIS)</b></td>\n')
-	lister.append('<td bgcolor="#D0F7C3"><b>Balance ({})</b></td>\n'.format(def_curr))
+	lister.append('<td bgcolor="#D0F7C3"><b>Balance ({})</b></td>\n'.format(disp_curr[int(def_curr)]))
 	lister.append('</tr>\n')
 	lister = lister + view
 	lister.append('</table>\n')
@@ -1419,6 +1438,77 @@ def mycharts():
 	starter = "" + str(''.join(initial))
 
 	return starter.encode("utf-8")
+	
+@app.route('/details')
+def detailinfo():
+
+	try:
+		getdetail = request.args.get('mydetail')
+	except:
+		getdetail = None
+		
+	#print(getdetail)
+
+	if getdetail:
+		m_stuff = getdetail.split(":")
+		#print(m_stuff)
+		
+		conn = sqlite3.connect(bis_root)
+		conn.text_factory = str
+		c = conn.cursor()
+		c.execute("SELECT * FROM transactions WHERE block_height = ? AND address = ? AND recipient = ? AND amount = ?;", (m_stuff[0],m_stuff[1],m_stuff[2],m_stuff[3]))
+
+		m_detail = c.fetchone()
+		#print(m_detail)
+		c.close()
+		conn.close()
+		
+		if m_detail:
+		
+			d_block = str(m_detail[0])
+			d_time = str(time.strftime("%Y/%m/%d,%H:%M:%S", time.gmtime(float(m_detail[1]))))
+			d_from = str(m_detail[2])
+			d_to = str(m_detail[3])
+			d_amount = str(m_detail[4])
+			d_sig = str(m_detail[5])
+			d_txid = d_sig[:56]
+			d_pub = str(m_detail[6])
+			d_hash = str(m_detail[7])
+			d_fee = str(m_detail[8])
+			d_reward = str(m_detail[9])
+			d_open = str(m_detail[11][:1000])
+			
+		else:
+			
+			d_block = "Not Found"
+			d_time = ""
+			d_from = ""
+			d_to = ""
+			d_amount = ""
+			d_sig = ""
+			d_txid = ""
+			d_pub = ""
+			d_hash = ""
+			d_fee = ""
+			d_reward = ""
+			d_open = ""
+			
+	else:
+	
+		d_block = "Not Found"
+		d_time = ""
+		d_from = ""
+		d_to = ""
+		d_amount = ""
+		d_sig = ""
+		d_txid = ""
+		d_pub = ""
+		d_hash = ""
+		d_fee = ""
+		d_reward = ""
+		d_open = ""
+	
+	return render_template('detail.html', ablock=d_block, atime=d_time, afrom=d_from, ato=d_to, aamount=d_amount, asig=d_sig, atxid=d_txid, apub=d_pub, ahash=d_hash, afee=d_fee, areward=d_reward, aopen=d_open)
 	
 @app.route('/api/<param1>/<param2>', methods=['GET'])
 def handler(param1, param2):
@@ -1768,7 +1858,8 @@ urls = (
 	'/api', 'api',
 	'/apihelp', 'API',
 	'/charts', 'Charts',
-	'/diff_chart', 'Difficulty'
+	'/diff_chart', 'Difficulty',
+	'/details', 'Details'
 )
 
 if __name__ == "__main__":
