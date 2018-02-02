@@ -1,5 +1,5 @@
 # Bismuth Tools Web Edition
-# Version 5.0.1
+# Version 5.0.2
 # Date 02/02/2018
 # Copyright Maccaspacca 2017, 2018
 # Copyright Hclivess 2016 to 2018
@@ -1061,10 +1061,10 @@ def ledger_query():
 				c.close()
 				conn.close()
 				
-				if not all:				
-					extext = "<p style='color:#C70039'>Error !!! Nothing found for the address, txid or hash you entered</p>"
-				else:
-					extext = "<p>Transaction found for ID given</p>"
+			if not all:				
+				extext = "<p style='color:#C70039'>Error !!! Nothing found for the address, txid or hash you entered</p>"
+			else:
+				extext = "<p>Transaction found for ID given</p>"
 	
 	if my_type == 2:
 	

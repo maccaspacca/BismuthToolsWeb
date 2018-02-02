@@ -73,6 +73,11 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 
 Changes
 =======
+Version 5.0.2 02/02/2018
+------------------------
+
+1. Block hash query fix
+
 Version 5.0.1 02/02/2018
 ------------------------
 
