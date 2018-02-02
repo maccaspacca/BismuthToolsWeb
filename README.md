@@ -73,6 +73,11 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 
 Changes
 =======
+Version 5.0.1 02/02/2018
+------------------------
+
+1. Query string trim
+
 Version 5.0.0 01/02/2018
 ------------------------
 

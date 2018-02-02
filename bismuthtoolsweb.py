@@ -1,6 +1,6 @@
 # Bismuth Tools Web Edition
-# Version 5.0.0
-# Date 01/02/2018
+# Version 5.0.1
+# Date 02/02/2018
 # Copyright Maccaspacca 2017, 2018
 # Copyright Hclivess 2016 to 2018
 # Author Maccaspacca
@@ -1007,6 +1007,8 @@ def ledger_query():
 	#if not myblock.isalnum():
 		#myblock = "0"
 		#print("has dodgy characters but now fixed")
+	
+	myblock = myblock.strip()
 	
 	my_type = test(myblock)
 	
