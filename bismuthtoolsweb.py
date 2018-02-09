@@ -1,6 +1,6 @@
 # Bismuth Tools Web Edition
-# Version 5.0.2
-# Date 02/02/2018
+# Version 5.0.3
+# Date 09/02/2018
 # Copyright Maccaspacca 2017, 2018
 # Copyright Hclivess 2016 to 2018
 # Author Maccaspacca
@@ -61,6 +61,10 @@ try:
 	bis_limit = int(config.get('My Bismuth', 'bis_limit'))
 except:
 	bis_limit = 1
+try:
+	topia = config.get('My Bismuth', 'cryptopia')
+except:
+	topia = "edf2d63cdf0b6275ead22c9e6d66aa8ea31dc0ccb367fad2e7c08a25" # cryptopia address
 try:
 	diff_ch = int(config.get('My Charts', 'diff'))
 except:
@@ -1032,6 +1036,8 @@ def ledger_query():
 			temp_all = c.fetchall()
 
 			if mydisplay == 0:
+				all = temp_all
+			elif str(myblock) == topia:
 				all = temp_all
 			else:
 				all = temp_all[:mydisplay]

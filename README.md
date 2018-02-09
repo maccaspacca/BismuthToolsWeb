@@ -73,6 +73,11 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 
 Changes
 =======
+Version 5.0.3 09/02/2018
+------------------------
+
+1. Cryptopia address query fix to allow display of all transactions
+
 Version 5.0.2 02/02/2018
 ------------------------
 
