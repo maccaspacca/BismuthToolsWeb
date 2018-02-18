@@ -1,6 +1,6 @@
 # Bismuth Tools Web Edition
-# Version 5.0.3
-# Date 09/02/2018
+# Version 5.0.4
+# Date 18/02/2018
 # Copyright Maccaspacca 2017, 2018
 # Copyright Hclivess 2016 to 2018
 # Author Maccaspacca
@@ -1024,7 +1024,7 @@ def ledger_query():
 		
 		myxtions = refresh(myblock,1)
 		
-		if float(myxtions[4]) > 0:
+		if float(myxtions[0]) > 0:
 		
 			extext = "<p style='color:#08750A'><b>ADDRESS FOUND | Credits: {} | Debits: {} | Rewards: {} |".format(myxtions[0],myxtions[1],myxtions[2])
 			extext = extext + " Fees: {} | BALANCE: {}</b></p>".format(myxtions[3],myxtions[4])

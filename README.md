@@ -73,6 +73,11 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 
 Changes
 =======
+Version 5.0.4 18/02/2018
+------------------------
+
+1. Issue 6 fix - transactions not displayed for zero balance addresses
+
 Version 5.0.3 09/02/2018
 ------------------------
 
