@@ -1,6 +1,6 @@
-# Bismuth Tools Web Edition
-# Version 5.0.4
-# Date 18/02/2018
+# Bismuth Tools Web
+# Version 5.0.5
+# Date 08/03/2018
 # Copyright Maccaspacca 2017, 2018
 # Copyright Hclivess 2016 to 2018
 # Author Maccaspacca
@@ -28,6 +28,8 @@ global myaddress
 global myrate
 global mysponsor
 global disp_curr
+
+myversion = "5.05"
 
 disp_curr = ["BTC","USD","EUR","GBP","CNY","AUD"]
 
@@ -750,7 +752,7 @@ def my_head(bo):
 	mhead.append('<meta property="og:locale" content="en_US" />\n')
 	mhead.append('<meta property="xbm:version" content="201" />\n')
 	mhead.append('<meta name="description" content="{}" />\n'.format(dado[1]))
-	mhead.append('<title>{}</title>\n'.format(dado[0]))
+	mhead.append('<title>{} v{}</title>\n'.format(dado[0],myversion))
 	mhead.append('</head>\n')
 	mhead.append('<body background="static/explorer_bg.png">\n')
 	mhead.append('<center>\n')
@@ -1023,8 +1025,9 @@ def ledger_query():
 	if my_type == 1:
 		
 		myxtions = refresh(myblock,1)
+		#print(myxtions)
 		
-		if float(myxtions[0]) > 0:
+		if float(myxtions[0]) or float(myxtions[2]) > 0:
 		
 			extext = "<p style='color:#08750A'><b>ADDRESS FOUND | Credits: {} | Debits: {} | Rewards: {} |".format(myxtions[0],myxtions[1],myxtions[2])
 			extext = extext + " Fees: {} | BALANCE: {}</b></p>".format(myxtions[3],myxtions[4])

@@ -73,6 +73,12 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 
 Changes
 =======
+Version 5.0.5 08/03/2018
+------------------------
+
+1. Issue 7 fix - transactions not displayed for zero credit addresses e.g. mining pools
+2. Version placed on title
+
 Version 5.0.4 18/02/2018
 ------------------------
 
