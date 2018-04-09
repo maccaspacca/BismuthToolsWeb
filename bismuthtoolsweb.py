@@ -1,6 +1,6 @@
 # Bismuth Tools Web
-# Version 5.0.5
-# Date 08/03/2018
+# Version 5.0.6
+# Date 09/04/2018
 # Copyright Maccaspacca 2017, 2018
 # Copyright Hclivess 2016 to 2018
 # Author Maccaspacca
@@ -1071,7 +1071,7 @@ def ledger_query():
 				conn.close()
 				
 			if not all:				
-				extext = "<p style='color:#C70039'>Error !!! Nothing found for the address, txid or hash you entered</p>"
+				extext = "<p style='color:#C70039'>Nothing found for the address, txid or hash you entered - perhaps there has never been any transactions made?</p>"
 			else:
 				extext = "<p>Transaction found for ID given</p>"
 	
@@ -1094,7 +1094,7 @@ def ledger_query():
 			conn.close()
 	
 		if not all:
-			extext = "<p style='color:#C70039'>Error !!! Block, address or hash not found. Maybe you entered bad data or nothing at all?</p>\n"
+			extext = "<p style='color:#C70039'>Block, address, txid or hash not found. Maybe there has been no transactions, you entered bad data, or you entered nothing at all?</p>\n"
 		else:
 			pblock = int(myblock) -1
 			nblock = int(myblock) +1

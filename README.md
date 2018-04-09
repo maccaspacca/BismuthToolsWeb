@@ -73,6 +73,11 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 
 Changes
 =======
+Version 5.0.6 09/04/2018
+------------------------
+
+1. Issue 8 fix - Recommendation on wording - empty wallets
+
 Version 5.0.5 08/03/2018
 ------------------------
 
