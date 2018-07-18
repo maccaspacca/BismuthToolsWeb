@@ -23,7 +23,7 @@ Windows
 
 1. Bismuth cryptocurrency installed via the latest installation executable at https://github.com/hclivess/bismuth/releases or run from source
 2. Full Bismuth node with full ledger mode
-3. Python 3.5.3 and dependencies as detailed at https://bitcointalk.org/index.php?topic=1896497
+3. Python 3.5.3 or better and Bismuth node dependencies as detailed at https://bitcointalk.org/index.php?topic=1896497
 4. BS4 ([sudo] [pip] [pip3] install bs4)
 5. Flask
 6. tornado
@@ -31,7 +31,7 @@ Windows
 Linux e.g. Ubuntu 16.04 LTS
 ===========================
 
-1. Python 3.5.3 and dependencies as detailed at https://bitcointalk.org/index.php?topic=1896497
+1. Python 3.5.3 or better and Bismuth node dependencies as detailed at https://bitcointalk.org/index.php?topic=1896497
 2. The Bismuth cryptocurrency installed from source (some additional python components such as pysocks may be needed depending on your installation)
 3. Full Bismuth node with full ledger mode
 4. BS4 ([sudo] [pip] [pip3] install bs4)
@@ -73,6 +73,24 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 
 Changes
 =======
+Version 6.0.0 18/07/2018
+------------------------
+
+Major update
+
+1. Look and feel changes
+2. Ledger query now includes alias query
+3. Ledger query returns list with links to transaction details using simplified URL based on txid only
+4. Removal of hash column on front page in favour of txid and link to transaction detail now included
+5. Integration of operation field in query and details results
+6. Update of API to include queries using alias, txid and returning results that include operation, txid, alias etc where appropriate
+7. Minor code changes
+8. Removal of old hyperlimit code
+9. Query node directly for latest block and diff information
+
+Future changes to include more charts and further reviews
+
+
 Version 5.0.6 09/04/2018
 ------------------------
 

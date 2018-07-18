@@ -47,53 +47,79 @@ table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-w
 <table ><tbody><tr>
 <td align="center" style="border:hidden;width:600px;">
 <h1>Bismuth Cryptocurrency</h1>
-<h2>Transaction Information</h2>
+<h2>API Help</h2>
+<p><b>Webtools includes a public API returning various JSON results</p>
+<p>The general format of a query is: http://bismuth.online/api/parameter1/parameter2</b></p>
 <p></p>
 </td>
 </tr>
 </tbody></table>
-<table ><tbody>
-</center>
+<table><tbody>
 <tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>Block:</b> {{ ablock }}
-</td><td style="border:hidden"></td></tr><tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>Timestamp (GMT):</b> {{ atime }}
-</td><td style="border:hidden"></td></tr><tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>From:</b> {{ afrom }}
-</td><td style="border:hidden"></td></tr><tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>To:</b> {{ ato }}
-</td><td style="border:hidden"></td></tr><tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>Amount:</b> {{ aamount }}
-</td><td style="border:hidden"></td></tr>
-<tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>Signature:</b> {{ asig }}
-</td><td style="border:hidden;width:6px;"></td></tr>
-<tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>Transaction ID:</b> {{ atxid }}
-</td><td style="border:hidden;width:6px;"></td></tr>
-<tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>Block Hash:</b> {{ ahash }}
-</td><td style="border:hidden"></td></tr><tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>Fee:</b> {{ afee }}
-</td><td style="border:hidden"></td></tr><tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>Reward:</b> {{ areward }}
-</td><td style="border:hidden"></td></tr><tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>Operation:</b> {{ aoperation }}
-</td><td style="border:hidden"></td></tr><tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>Openfield (first 1000 Characters):</b> {{ aopen }}
-</td><td style="border:hidden"></td></tr></tbody></table>
-<center><p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p></center>
+<td><b>Parameter 1</b></td>
+<td><b>Parameter 2</b></td>
+<td><b>Notes</b></td>
+</tr>
+<tr bgcolor="#E8E8E8">
+<td>stats</td>
+<td>circulation</td>
+<td>Gets the total number of Bismuth in circulation</td>
+</tr>
+<tr bgcolor="white">
+<td>stats</td>
+<td>latestblock</td>
+<td>Gets information about the last block found</td>
+</tr>
+<tr bgcolor="#E8E8E8">
+<td>address</td>
+<td>Bismuth address</td>
+<td><p>Gets summary information about a Bismuth address
+<p>Insert a: and a valid alias as an alternative</p></td>
+</tr>
+<tr bgcolor="white">
+<td>getall</td>
+<td>Bismuth address</td>
+<td><p>Gets a list of transactions against a Bismuth address{{ atext }}</p>
+<p>Insert a: and a valid alias as an alternative</p></td>
+</tr>
+<tr bgcolor="#E8E8E8">
+<td>block</td>
+<td>Block number</td>
+<td>Gets information about a Bismuth block</td>
+</tr>
+<tr bgcolor="white">
+<td>hash</td>
+<td>Hash string</td>
+<td>Gets information about a Bismuth hash</td>
+</tr>
+<tr bgcolor="#E8E8E8">
+<td>txid</td>
+<td>Transaction ID</td>
+<td><p>Gets the details for a Bismuth transaction</p>
+<p><i>Note: replace any forward slashes with a period or full stop</i></p></td>
+</tr>
+<tr bgcolor="white">
+<td>richlist</td>
+<td>Input a number or the word all</td>
+<td>Gets a list of top Bismuth wallets to the number specified (or all) sorted by wallet balance</td>
+</tr>
+<tr bgcolor="#E8E8E8">
+<td>miners</td>
+<td>Input a number or the word all</td>
+<td>Gets a list of the top Bismuth miners to the number specified (or all) sorted by blocks found</td>
+</tr>
+<tr bgcolor="white">
+<td>aminer</td>
+<td>Miner address</td>
+<td><p>Gets more information about a specific Bismuth miner</p>
+<p>Insert a: and a valid alias as an alternative</p></td>
+</tr>
+<tr bgcolor="#E8E8E8">
+<td>diffhist</td>
+<td>Input a number of blocks, greater than 10</td>
+<td>Gets the difficulty history for a specific number of previous blocks</td>
+</tr>
+</tbody></table>
+<center><p></p><p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p></center>
 </body>
 </html>
