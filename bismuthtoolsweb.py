@@ -1,6 +1,6 @@
 # Bismuth Tools Web
-# Version 6.0.0
-# Date 18/07/2018
+# Version 6.0.1
+# Date 26/07/2018
 # Copyright Maccaspacca 2017, 2018
 # Copyright Hclivess 2016 to 2018
 # Author Maccaspacca
@@ -1188,7 +1188,12 @@ def ledger_query():
 			color_cell = "#E8E8E8"
 		else:
 			color_cell = "white"
-		#det_link = "/details?mydetail={}:{}:{}:{}".format(str(x[0]),str(x[2]),str(x[3]),str(x[4]))
+			
+		if bool(BeautifulSoup(str(x[11]),"html.parser").find()):
+			x_open = "HTML NOT SHOWN HERE"
+		else:
+			x_open = str(x[11][:20])
+
 		det_str = str(x[5][:56])
 		det_str = det_str.replace("+","%2B")
 		det_link = "/details?mydetail={}".format(det_str)
@@ -1202,7 +1207,7 @@ def ledger_query():
 		view.append('<td>{}</td>'.format(str(x[8])))
 		view.append('<td>{}</td>'.format(str(x[9])))
 		view.append('<td>{}</td>'.format(str(x[10])))
-		view.append('<td>{}</td>'.format(str(x[11][:20])))
+		view.append('<td>{}</td>'.format(x_open))
 		view.append('</tr>\n')
 		i = i+1
 	
