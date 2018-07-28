@@ -24,7 +24,7 @@ table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-w
 <meta property="og:locale" content="en_US" />
 <meta property="xbm:version" content="201" />
 <meta name="description" content="Bismuth Cryptocurrency tools with block explorer, blockchain query, miner information and richlist" />
-<title>Bismuth Tools Web v6.0.0</title>
+<title>Bismuth Tools Web v6.0.2</title>
 <!-- import plugin script -->
 <script src='static/Chart.min.js'></script>
 </head>
@@ -44,7 +44,7 @@ table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-w
 </ul>
 </td></tr>
 </table>
-    <h1>Recent Bismuth Difficulty Chart</h1>
+    <h1>{{ ttl }}</h1>
     <!-- bar chart canvas element -->
     <canvas id="myChart" width="600" height="400"></canvas>
     <p id="caption"></p>
@@ -90,7 +90,7 @@ table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-w
 
       // create the chart using the chart canvas
       var myChart = new Chart(ctx, {
-        type: 'line',
+        type: '{{ lt }}',
         data: chartData,
       });
     </script>

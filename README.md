@@ -73,6 +73,19 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 
 Changes
 =======
+
+Version 6.0.2 28/07/2018
+------------------------
+
+1. Issue 12 fix
+2. Blocktime chart
+3. Minor code changes
+
+Version 6.0.1 26/07/2018
+------------------------
+
+1. Issue 11 fix - html content in openfield causing display problems
+
 Version 6.0.0 18/07/2018
 ------------------------
 

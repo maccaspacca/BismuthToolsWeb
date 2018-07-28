@@ -1,6 +1,6 @@
 # Bismuth Tools Web
-# Version 6.0.1
-# Date 26/07/2018
+# Version 6.0.2
+# Date 29/07/2018
 # Copyright Maccaspacca 2017, 2018
 # Copyright Hclivess 2016 to 2018
 # Author Maccaspacca
@@ -33,7 +33,7 @@ ip = "127.0.0.1"
 port = "5658"
 #port = "2829"
 
-myversion = "6.0.0"
+myversion = "6.0.2"
 
 disp_curr = ["BTC","USD","EUR","GBP","CNY","AUD"]
 
@@ -109,7 +109,7 @@ def get_cmc_info(alt_curr):
 		c_btc = y[0]['price_btc']
 		c_usd = "{:.2f}".format(float(y[0]['price_usd']))
 		c_cus = "{:.2f}".format(float(y[0][ch]))
-		# print( y )
+		#print( y )
 		s = "<p><b> LATEST PRICES: BTC = {} | USD = {} | {} = {}</b></p>".format(c_btc,str(c_usd),alt_curr,str(c_cus))
 		
 	except requests.exceptions.RequestException as e:
@@ -194,6 +194,35 @@ def latest():
 	logging.info("Latest block queried: {}".format(str(db_block_height)))
 
 	return db_block_height, last_block_ago, diff_block_previous, db_block_finder, db_timestamp_last, db_block_hash, db_block_open, db_block_txid
+	
+def get_block_time(my_hist):
+
+	lb_tick = latest()
+	lb_height = lb_tick[0]
+	lb_stamp = lb_tick[4]
+	sb_height = int(lb_height) - my_hist
+	
+	conn = sqlite3.connect(bis_root)  # open to select the last tx to create a new hash from
+	conn.text_factory = str
+	c = conn.cursor()
+	c.execute("SELECT timestamp,block_height FROM transactions WHERE reward !=0 and block_height >= ?;",(str(sb_height),))
+	result = c.fetchall()
+
+	l = []
+	y = 0
+	for x in result:
+		if y == 0:
+			ts_difference = 0
+		else:
+			ts_difference = float(x[0]) - float(y)
+		ts_block = x[1]
+		#print(str(x[1])+" "+str(ts_difference))
+		tx = (ts_block,ts_difference)
+		l.append(tx)
+		y = x[0]
+
+	return l
+	
 
 def getmeta(this_url):
 # This module attempts to get Open Graph information for the sponsor site_name
@@ -524,7 +553,7 @@ def buildtoolsdb():
 	
 	while True:
 	
-		print("Stats: Waiting for 5 minutes.......")
+		print("Price info updated: Waiting for 5 minutes.......")
 	
 		time.sleep(300)
 		cmc_vals = []
@@ -543,7 +572,7 @@ def buildtoolsdb():
 		i +=1
 		if i == 6:
 			bobble = updatedb()
-			print("Tools DB: Waiting for 30 minutes.......")
+			print("Tools DB updated: Waiting for 30 minutes.......")
 			i = 0
 
 def checkstart():
@@ -942,13 +971,16 @@ def home():
 	return starter.encode("utf-8")
 	
 @app.route('/diff_chart')
-def chart():
+def d_chart():
 
+	ttl = "Recent Bismuth Difficulty"
+	lt = "line"
 	conn = sqlite3.connect(bis_root)
 	conn.text_factory = str
 	c = conn.cursor()
 	c.execute("SELECT * FROM misc ORDER BY block_height DESC LIMIT ?;", (diff_ch,))
 	d_result = c.fetchall()
+	#print(d_result)
 	b = []
 	d = []
 	d_result = list(reversed(d_result))
@@ -961,7 +993,28 @@ def chart():
 	
 	legend = 'Difficulty'
 
-	return render_template('chart.html', values=d, labels=b, legend=legend)
+	return render_template('chart.html', values=d, labels=b, legend=legend, ttl=ttl, lt=lt)
+
+@app.route('/time_chart')
+def b_chart():
+
+	ttl = "Recent Bismuth Blocktime"
+	lt = "bar"
+	b = []
+	d = []
+	d_result = get_block_time(120)
+	#print(d_result)
+	
+	#d_result = list(reversed(d_result))
+
+	for v in d_result:
+		b.append(v[0])
+		d.append(round(v[1],8))
+
+	legend = 'Blocktime (seconds)'
+	#print(d)
+
+	return render_template('chart.html', values=d, labels=b, legend=legend, ttl=ttl, lt=lt)
 	
 
 @app.route('/minerquery', methods=['GET'])
@@ -1162,8 +1215,7 @@ def ledger_query():
 			c.execute("SELECT * FROM transactions WHERE block_height = ?;", (myblock,))
 
 			all = c.fetchall()
-			#print(all)
-			
+		
 			c.close()
 			conn.close()
 	
@@ -1173,7 +1225,10 @@ def ledger_query():
 			pblock = int(myblock) -1
 			nblock = int(myblock) +1
 			extext = "<form action='/ledgerquery' method='post'><table><tr>\n"
-			extext = extext + "<td style='border:hidden;'><p></p></td>\n"
+			if pblock > 0:
+				extext = extext + "<td style='border:hidden;'><button type='submit' name='block' value='{}' class='btn-link'><< Previous Block</button></td>\n".format(str(pblock))
+			else:
+				extext = extext + "<td style='border:hidden;'><p></p></td>\n"		
 			extext = extext + "<td style='border:hidden;'><p><b>Transactions for block {}</b></p></td>\n".format(str(myblock))
 			if nblock < (int(mylatest[0]) + 1):
 				extext = extext + "<td style='border:hidden;'><button type='submit' name='block' value='{}' class='btn-link'>Next Block >></button></td>\n".format(str(nblock))
@@ -1193,7 +1248,7 @@ def ledger_query():
 			x_open = "HTML NOT SHOWN HERE"
 		else:
 			x_open = str(x[11][:20])
-
+		
 		det_str = str(x[5][:56])
 		det_str = det_str.replace("+","%2B")
 		det_link = "/details?mydetail={}".format(det_str)
@@ -1465,7 +1520,8 @@ def mycharts():
 	initial.append('<h1>Bismuth Cryptocurrency</h1>\n')
 	initial.append('<h2>Information Charts</h2>\n')
 	initial.append('<p></p>')
-	initial.append('<h3><a href="/diff_chart">Difficulty Chart</a></h3>\n')		
+	initial.append('<h3><a href="/diff_chart">Difficulty Chart</a></h3>\n')
+	initial.append('<h3><a href="/time_chart">Blocktime Chart</a></h3>\n')		
 	initial.append('</td>\n')
 	initial.append('<td align="center" style="border:hidden;">')
 	initial.append('<p></p>')
@@ -1903,6 +1959,7 @@ urls = (
 	'/apihelp', 'API',
 	'/charts', 'Charts',
 	'/diff_chart', 'Difficulty',
+	'/time_chart', 'Blocktime',
 	'/details', 'Details'
 )
 
