@@ -1,6 +1,6 @@
 # Bismuth Tools Web
-# Version 6.0.2
-# Date 29/07/2018
+# Version 6.0.3
+# Date 02/09/2018
 # Copyright Maccaspacca 2017, 2018
 # Copyright Hclivess 2016 to 2018
 # Author Maccaspacca
@@ -33,7 +33,7 @@ ip = "127.0.0.1"
 port = "5658"
 #port = "2829"
 
-myversion = "6.0.2"
+myversion = "6.0.3"
 
 disp_curr = ["BTC","USD","EUR","GBP","CNY","AUD"]
 
@@ -432,7 +432,7 @@ def sponsor_list(thisaddress,thisrate):
 
 			latest_block = latest()
 						
-			if latest_block[0] < max_block:
+			if int(latest_block[0]) < max_block:
 				temp_ogs = getmeta(str(dud[1]))
 				the_sponsors.append((temp_ogs[0],temp_ogs[1],temp_ogs[2],temp_ogs[3],str(max_block),str(temp_block),temp_ogs[4]))
 			else:
