@@ -1,6 +1,6 @@
 # Bismuth Tools Web
-# Version 6.0.3
-# Date 02/09/2018
+# Version 6.1.0
+# Date 17/09/2018
 # Copyright Maccaspacca 2017, 2018
 # Copyright Hclivess 2016 to 2018
 # Author Maccaspacca
@@ -9,17 +9,26 @@ from tornado.wsgi import WSGIContainer
 from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 
+import tornado.ioloop
+from tornado.ioloop import PeriodicCallback
+import tornado.websocket
+import tornado.httpserver
+import tornado.web
+from random import randint #Random generator
+
 from flask import Flask, request
 from flask import Markup
 from flask import render_template
 app = Flask(__name__)
 
-import json, sqlite3, time, re, os, socks, connections
+import json, sqlite3, time, re, os, socks, connections, bisurl, pyqrcode, datetime, calendar
 import threading
 from bs4 import BeautifulSoup
-import logging, random, platform, requests
+import log, random, platform, requests
 import configparser as cp
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
+from decimal import *
+from glob import glob
 	
 # globals
 global my_os
@@ -29,23 +38,17 @@ global myrate
 global mysponsor
 global disp_curr
 
-ip = "127.0.0.1"
-port = "5658"
-#port = "2829"
-
-myversion = "6.0.3"
+myversion = "6.1.0"
 
 disp_curr = ["BTC","USD","EUR","GBP","CNY","AUD"]
 
-logging.basicConfig(level=logging.INFO, 
-                    filename='toolsdb.log', # log to this file
-                    format='%(asctime)s %(message)s') # include timestamp
+app_log = log.log("toolsdb.log","WARNING", "yes")
 
-logging.info("logging initiated")
+app_log.info("logging initiated")
 
 config = cp.ConfigParser()
 config.readfp(open(r'toolsconfig.ini'))
-logging.info("Reading config file.....")
+app_log.info("Reading config file.....")
 mysponsor = int(config.get('My Sponsors', 'sponsors'))
 myaddress = config.get('My Sponsors', 'address')
 myrate = float(config.get('My Sponsors', 'rate'))
@@ -75,9 +78,22 @@ try:
 	diff_ch = int(config.get('My Charts', 'diff'))
 except:
 	diff_ch = 50
-
-logging.info("Config file read completed")
+try:
+	bis_mode = config.get('My Bismuth', 'bis_mode')
+except:
+	bis_mode = "live"
+try:
+	ip = config.get('My Bismuth', 'node_ip')
+except:
+	ip = "127.0.0.1"
+	
+app_log.info("Config file read completed")
 config = None
+
+if bis_mode == "testnet":
+	port = "2829"
+else:
+	port = "5658"
 
 if mysponsor == 1:
 	mysponsor = True
@@ -95,6 +111,75 @@ else: # if its not windows then probably a linux or unix variant
 	pass
 
 print("Bismuth path = {}".format(bis_root))
+
+
+# Classes start
+
+wport = 9000 #Websocket Port
+timeInterval= 5000 #Milliseconds
+
+class WSHandler(tornado.websocket.WebSocketHandler):
+	#check_origin fixes an error 403 with Tornado
+	#http://stackoverflow.com/questions/24851207/tornado-403-get-warning-when-opening-websocket
+	def check_origin(self, origin):
+		return True
+
+	def open(self):
+		#Send message periodic via socket upon a time interval
+		self.callback = PeriodicCallback(self.send_values, timeInterval)
+		self.callback.start()
+
+	def send_values(self):
+		#Generates random values to send via websocket
+		self.thismessage = self.mpgetjson()
+
+		for response in self.thismessage:
+			smessage = response
+			self.write_message(smessage)
+
+	def on_message(self, message):
+		pass
+
+	def on_close(self):
+		self.callback.stop()
+		
+	def mpgetjson(self):
+		#ask for mempool
+	
+		s = socks.socksocket()
+		s.settimeout(10)
+		s.connect((ip, int(port)))
+
+		connections.send(s, "mpgetjson", 10)
+		response_list = connections.receive(s, 10)
+		
+		send_back = []
+		
+		if response_list:
+		
+			t = "<br>There are {} transactions in the mempool</br>".format(str(len(response_list)))
+			# send_back.append(t)
+		
+			for response in response_list:
+				address = response['address']
+				recipient = response['recipient']
+				amount = response['amount']
+				txid = response['signature'][:56]
+				operation = response['operation']
+				openfield = response['openfield']
+				
+				t = t + "<br><b>Address:</b> {}, Recipient: {}, Amount: {}, txid: {}, Operation: {}, Openfield: {}</br>".format(address,recipient,amount,txid,operation,openfield)
+			send_back.append(t)
+		else:
+			t = "Mempool Empty"
+			send_back.append(t)
+			
+		s.close()
+		
+		return send_back
+		#ask for mempool
+
+# End Classes
 
 
 def get_cmc_info(alt_curr):
@@ -138,18 +223,81 @@ def myoginfo():
 	doda = []
 	doconfig = cp.ConfigParser()
 	doconfig.readfp(open(r'toolsconfig.ini'))
-	logging.info("Reading config file.....")
+	app_log.info("Reading config file.....")
 	doda.append(doconfig.get('My Oginfo', 'og_title'))
 	doda.append(doconfig.get('My Oginfo', 'og_description'))
 	doda.append(doconfig.get('My Oginfo', 'og_url'))
 	doda.append(doconfig.get('My Oginfo', 'og_site_name'))
 	doda.append(doconfig.get('My Oginfo', 'og_image'))
 
-	logging.info("Config file read completed")
+	#app_log.info("Config file read completed")
 	
 	doconfig = None
 	
 	return doda
+	
+def display_time(seconds, granularity=2):
+
+	intervals = (
+		('weeks', 604800),  # 60 * 60 * 24 * 7
+		('days', 86400),    # 60 * 60 * 24
+		('hours', 3600),    # 60 * 60
+		('minutes', 60),
+		('seconds', 1),
+		)
+
+	result = []
+
+	for name, count in intervals:
+		value = seconds // count
+		if value:
+			seconds -= value * count
+			if value == 1:
+				name = name.rstrip('s')
+			result.append("{} {}".format(value, name))
+	return ', '.join(result[:granularity])
+	
+def status_me():
+
+	try:
+		s = socks.socksocket()
+		s.settimeout(10)
+		s.connect((ip, int(port)))
+		
+		# Node status
+		connections.send(s, "statusjson", 10)
+		status_resp = connections.receive(s, 10)
+		# Node status
+		
+		try:
+			w_version = status_resp['walletversion']
+			p_version = status_resp['protocolversion']
+			w_cnx = status_resp['connections']
+			w_uptime = status_resp['uptime']
+			w_cons = status_resp['consensus_percent']
+			w_blk = status_resp['consensus']
+		except:
+			w_version = ""
+			p_version = ""
+			w_cnx = ""
+			w_uptime = "0"
+			w_cons = "0"
+			w_blk = ""
+	except:
+		w_version = ""
+		p_version = ""
+		w_cnx = ""
+		w_uptime = "0"
+		w_cons = "0"
+		w_blk = ""
+		
+	n_up = display_time(int(w_uptime),4)
+		
+	node_info = "<b><p>Node uptime: {}</p><p>Running {} and software version {}</p>\n".format(n_up,p_version,w_version)
+	node_info = node_info + "<p>Consensus is {} % at block number {} with {} connections</b></p>\n".format(str(int(w_cons)),w_blk,w_cnx)
+	
+	return node_info
+
 	
 def latest():
 
@@ -191,7 +339,7 @@ def latest():
 	except:
 		print("No connection")
 
-	logging.info("Latest block queried: {}".format(str(db_block_height)))
+	app_log.info("Latest block queried: {}".format(str(db_block_height)))
 
 	return db_block_height, last_block_ago, diff_block_previous, db_block_finder, db_timestamp_last, db_block_hash, db_block_open, db_block_txid
 	
@@ -202,7 +350,7 @@ def get_block_time(my_hist):
 	lb_stamp = lb_tick[4]
 	sb_height = int(lb_height) - my_hist
 	
-	conn = sqlite3.connect(bis_root)  # open to select the last tx to create a new hash from
+	conn = sqlite3.connect(bis_root)
 	conn.text_factory = str
 	c = conn.cursor()
 	c.execute("SELECT timestamp,block_height FROM transactions WHERE reward !=0 and block_height >= ?;",(str(sb_height),))
@@ -228,13 +376,17 @@ def getmeta(this_url):
 # This module attempts to get Open Graph information for the sponsor site_name
 # If this fails it attempts to use the "name" property before just filling the info with the url
 
+	app_log.info("Running getmeta for {}".format(this_url))
+
 	this_property = ("og:title","og:image","og:url","og:description","og:site_name")
 	oginfo = []
-
-	url = urlopen(this_url)
-
+	
+	req = Request(this_url, headers={'User-Agent': 'Mozilla/5.0'})
+	
+	url = urlopen(req)
+		
 	webpage = url.read()
-
+	
 	soup = BeautifulSoup(webpage, "html.parser")
 	
 	for prop in this_property:
@@ -242,13 +394,18 @@ def getmeta(this_url):
 		if temp_tag is not None:
 			oginfo.append(str(temp_tag["content"]))
 		else:
-			ex_prop = prop.split(":")[1]
-			ex_tag = soup.find("meta", {"name": ex_prop})
-			if ex_tag is not None:
-				oginfo.append(str(ex_tag["content"]))
+			temp_tag = soup.find("meta", {"name": prop})
+			if temp_tag is not None:
+				oginfo.append(str(temp_tag["content"]))
 			else:
-				oginfo.append("")
-
+				ex_prop = prop.split(":")[1]
+				ex_tag = soup.find("meta", {"name": ex_prop})
+				if ex_tag is not None:
+					oginfo.append(str(ex_tag["content"]))
+				else:
+					oginfo.append("")
+	
+	app_log.info("OGS: {}".format(oginfo))
 	return oginfo
 
 def i_am_first(my_first,the_address):
@@ -293,7 +450,7 @@ def checkmyname(myaddress):
 		else:
 			goodname = ""
 
-	logging.info("Tools DB: Check miner name result: Address {} = {}".format(str(myaddress),goodname))
+	app_log.info("Tools DB: Check miner name result: Address {} = {}".format(str(myaddress),goodname))
 		
 	return goodname
 	
@@ -322,7 +479,7 @@ def checkalias(myaddress):
 	if myaddress == "edf2d63cdf0b6275ead22c9e6d66aa8ea31dc0ccb367fad2e7c08a25":
 		goodname = "Cryptopia Exchange"
 
-	#logging.info("Tools DB: Check alias result: Address {} = {}".format(str(myaddress),goodname))
+	#app_log.info("Tools DB: Check alias result: Address {} = {}".format(str(myaddress),goodname))
 
 	return goodname
 	
@@ -410,6 +567,8 @@ def refresh(testAddress,typical):
 	
 def sponsor_list(thisaddress,thisrate):
 
+	#app_log.info("sponsor address: {}".format(thisaddress))
+
 	mysponsors = []
 
 	conn = sqlite3.connect(bis_root)
@@ -417,6 +576,7 @@ def sponsor_list(thisaddress,thisrate):
 	c = conn.cursor()
 	c.execute("SELECT * FROM transactions WHERE recipient = ? AND instr(openfield, 'sponsor=') > 0;",(thisaddress,))
 	mysponsors = c.fetchall()
+	#app_log.warning(mysponsors)
 	c.close()
 
 	the_sponsors = []
@@ -429,11 +589,18 @@ def sponsor_list(thisaddress,thisrate):
 			temp_block = dudes[0]
 			temp_paid = float(dudes[4])
 			max_block = temp_block + (int(round(temp_paid * thisrate)) + 100)
+			
+			#app_log.info("Max block: {}".format(str(max_block)))
 
 			latest_block = latest()
+			
+			#app_log.info("Latest block: {}".format(str(latest_block[0])))
 						
 			if int(latest_block[0]) < max_block:
+				app_log.info("sponsors - checking ogs")
+				
 				temp_ogs = getmeta(str(dud[1]))
+		
 				the_sponsors.append((temp_ogs[0],temp_ogs[1],temp_ogs[2],temp_ogs[3],str(max_block),str(temp_block),temp_ogs[4]))
 			else:
 				pass
@@ -442,7 +609,7 @@ def sponsor_list(thisaddress,thisrate):
 			pass
 
 	if not the_sponsors:
-		the_sponsors.append(("Bismuth","static/final.png","http://bismuth.cz/","In the truly free world, there are no limits","500000","68924","Bismuth"))
+		the_sponsors.append(("Bismuth","static/final.png","http://bismuth.cz/","In the truly free world, there are no limits","5000000","68924","Bismuth"))
 			
 	return the_sponsors
 	
@@ -450,7 +617,7 @@ def updatedb():
 
 	print("Updating database.....wait")
 	
-	logging.info("Tools DB: Rebuild")
+	app_log.info("Tools DB: Rebuild")
 
 	# create empty tools database
 	tools = sqlite3.connect('temptools.db')
@@ -462,17 +629,17 @@ def updatedb():
 	m.execute("CREATE TABLE IF NOT EXISTS sponsorlist (title, image, url, description, end, paid, name)")
 	tools.commit()
 
-	logging.info("Tools DB: Creating or updating tools database")
+	app_log.info("Tools DB: Creating or updating tools database")
 		
-	logging.info("Tools DB: Getting info.....")
+	app_log.info("Tools DB: Getting info.....")
 
 # sponsors ///////////////////////////////////////////////////
 
-	logging.info("Tools DB: Getting up to date list of sponsors.....")
+	app_log.info("Tools DB: Getting up to date list of sponsors.....")
 
 	the_sponsors = sponsor_list(myaddress,myrate)
 			
-	logging.info("Tools DB: Inserting sponsor information into database.....")
+	app_log.info("Tools DB: Inserting sponsor information into database.....")
 			
 	for y in the_sponsors:
 
@@ -491,7 +658,7 @@ def updatedb():
 	r_all = r.fetchall()
 	r.close()
 	
-	logging.info("Tools DB: getting richlist and minerlist information.....")
+	app_log.info("Tools DB: getting richlist and minerlist information.....")
 		
 	m.execute("begin")
 
@@ -525,7 +692,7 @@ def updatedb():
 	if os.path.isfile('tools.db'):
 		os.remove('tools.db')
 	os.rename('temptools.db','tools.db')
-	logging.info("Tools DB: Done !")
+	app_log.info("Tools DB: Done !")
 	
 	return True
 
@@ -569,6 +736,8 @@ def buildtoolsdb():
 		cmc_vals.append(get_cmc_val("CNY"))
 		time.sleep(1)
 		cmc_vals.append(get_cmc_val("AUD"))
+		for f in glob("static/qr*.png"):
+			os.remove(f)
 		i +=1
 		if i == 6:
 			bobble = updatedb()
@@ -579,7 +748,7 @@ def checkstart():
 
 	if not os.path.exists('tools.db'):
 		# create empty miners database
-		logging.info("Tools DB: Create New as none exists")
+		app_log.info("Tools DB: Create New as none exists")
 		mlist = sqlite3.connect('tools.db')
 		mlist.text_factory = str
 		m = mlist.cursor()
@@ -633,7 +802,7 @@ def getall():
 	conn = sqlite3.connect(bis_root)
 	conn.text_factory = str
 	c = conn.cursor()
-	c.execute("SELECT * FROM transactions ORDER BY block_height DESC, timestamp DESC LIMIT ?;", (front_display,))
+	c.execute("SELECT * FROM transactions ORDER BY timestamp DESC LIMIT ?;", (front_display,))
 
 	myall = c.fetchall()
 	
@@ -683,7 +852,7 @@ def s_test(testString):
 
 def miners():
 
-	logging.info("Tools DB: Get mining addresses from tools.db")
+	app_log.info("Tools DB: Get mining addresses from tools.db")
 	conn = sqlite3.connect('tools.db')
 	conn.text_factory = str
 	c = conn.cursor()
@@ -696,7 +865,7 @@ def miners():
 
 def richones():
 
-	logging.info("Tools DB: Get rich addresses from tools.db")
+	app_log.info("Tools DB: Get rich addresses from tools.db")
 	conn = sqlite3.connect('tools.db')
 	conn.text_factory = str
 	c = conn.cursor()
@@ -762,7 +931,7 @@ def get_sponsor():
 
 	if mysponsor:
 	
-		logging.info("Sponsors: Get sites from tools.db")
+		app_log.info("Sponsors: Get sites from tools.db")
 		conn = sqlite3.connect('tools.db')
 		conn.text_factory = str
 		c = conn.cursor()
@@ -794,7 +963,7 @@ def get_sponsor():
 		sponsor_display.append('</tr>\n')
 		sponsor_display.append('</table>\n')
 		
-		logging.info("Sponsors: {} was displayed".format(sponsor_result[x_go][2]))
+		app_log.info("Sponsors: {} was displayed".format(sponsor_result[x_go][2]))
 	
 	else:
 		sponsor_display = []
@@ -864,6 +1033,7 @@ def my_head(bo):
 		mhead.append('<li><a href="/sponsorinfo">Sponsors</a></li>\n')
 	mhead.append('<li><a href="/apihelp">API</a></li>\n')
 	mhead.append('<li><a href="/charts">Charts</a></li>\n')
+	mhead.append('<li><a href="/tools">Tools</a></li>\n')
 	mhead.append('</ul>\n')
 	mhead.append('</td></tr>\n')
 	mhead.append('</table>\n')
@@ -912,7 +1082,10 @@ def home():
 		det_str = det_str.replace("+","%2B")
 		det_link = "/details?mydetail={}".format(det_str)
 		thisview.append('<tr bgcolor ="{}">'.format(color_cell))
-		thisview.append('<td><a href="{}">{}</a></td>'.format(det_link,str(x[0])))
+		if x[0] < 0:
+			thisview.append('<td>{}</td>'.format(str(x[0])))
+		else:
+			thisview.append('<td><a href="{}">{}</a></td>'.format(det_link,str(x[0])))
 		thisview.append('<td>{}'.format(str(time.strftime("%Y/%m/%d,%H:%M:%S", time.gmtime(float(x[1]))))))
 		thisview.append('<td>{}</td>'.format(a_from)) # from
 		thisview.append('<td>{}</td>'.format(a_to)) # to
@@ -933,7 +1106,9 @@ def home():
 	initial.append('<td align="center" style="border:hidden;">\n')
 	initial.append('<h1>Bismuth Cryptocurrency</h1>\n')
 	initial.append('<h2>Welcome to the Bismuth Tools Web Edition</h2>\n')
-	initial.append('<p>Choose what you want to do next by clicking an option from the menu above</p>\n')
+	initial.append('<h3>Choose what you want to do next by clicking an option from the menu above</h3>\n')
+	node_info = status_me()
+	initial.append(node_info)
 	initial.append('<p><b>There are {} Bismuth in circulation</b></p>\n'.format(str(currcoins)))
 	initial.append('<h2>Last {} Transactions</h2>\n'.format(front_display))
 	initial.append('</td>\n')
@@ -1093,7 +1268,7 @@ def minerquery():
 def ledger_form():
 		
 	mylatest = latest()
-	
+
 	plotter = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
 	
 	plotter.append('<h2>Bismuth Ledger Query Tool</h2>\n')
@@ -1101,6 +1276,8 @@ def ledger_form():
 	plotter.append('<form method="post" action="/ledgerquery">\n')
 	plotter.append('<table>\n')
 	plotter.append('<tr><th><label for="block">Enter a Block number, txid, hash, address or a: followed by alias</label></th><td><input type="text" id="block" name="block" size="68"/></td></tr>\n')
+	plotter.append('<tr><th><label for="sdate">Start Date (optional)</label></th><td><input type="date" id="sdate" name="sdate" size="68"/> 00:00:00 hrs</td></tr>\n')
+	plotter.append('<tr><th><label for="fdate">End Date (optional)</label></th><td><input type="date" id="fdate" name="fdate" size="68"/> 23:59:59 hrs</td></tr>\n')
 	plotter.append('<tr><th><label for="Submit Query">Click Submit to List Transactions</label></th><td><button id="Submit Query" name="Submit Query">Submit Query</button></td></tr>\n')
 	plotter.append('</table>\n')
 	plotter.append('</form>\n')
@@ -1123,7 +1300,22 @@ def ledger_query():
 	a_display = False
 
 	myblock = request.form.get('block')
+	xdate = request.form.get('sdate')
+	ydate = request.form.get('fdate')
+
+	if xdate:
+		l_date = float(calendar.timegm(time.strptime(xdate, '%Y-%m-%d')))
+	else:
+		l_date = 1493640955.47
+		
+	if ydate:
+		r_date = float(calendar.timegm(time.strptime(ydate, '%Y-%m-%d'))) + 86399
+	else:
+		r_date = mylatest[4]
 	
+	#print("Start date: {}".format(l_date))
+	#print("End date: {}".format(r_date))
+
 	r_block = myblock
 	
 	#Nonetype handling - simply replace with "0"
@@ -1160,11 +1352,11 @@ def ledger_query():
 			
 			conn = sqlite3.connect(bis_root)
 			c = conn.cursor()
-			c.execute("SELECT * FROM transactions WHERE address = ? OR recipient = ? ORDER BY block_height DESC;", (str(myblock),str(myblock)))
+			c.execute("SELECT * FROM transactions WHERE (timestamp BETWEEN ? AND ?) AND (address = ? OR recipient = ?) ORDER BY timestamp DESC;", (l_date,r_date,str(myblock),str(myblock)))
 			
 			temp_all = c.fetchall()
 
-			if mydisplay == 0 or a_display:
+			if mydisplay == 0 or a_display or l_date > 1493640955.47:
 				all = temp_all
 				a_display = False
 			elif str(myblock) == topia:
@@ -1253,7 +1445,11 @@ def ledger_query():
 		det_str = det_str.replace("+","%2B")
 		det_link = "/details?mydetail={}".format(det_str)
 		view.append('<tr bgcolor ="{}">'.format(color_cell))
-		view.append('<td><a href="{}">{}</a></td>'.format(det_link,str(x[0])))
+
+		if x[0] < 0:
+			view.append('<td>{}</td>'.format(str(x[0])))
+		else:
+			view.append('<td><a href="{}">{}</a></td>'.format(det_link,str(x[0])))
 		view.append('<td>{}'.format(str(time.strftime("%Y/%m/%d,%H:%M:%S", time.gmtime(float(x[1]))))))
 		view.append('<td>{}</td>'.format(str(x[2])))
 		view.append('<td>{}</td>'.format(str(x[3])))
@@ -1273,6 +1469,8 @@ def ledger_query():
 	replot.append('<form method="post" action="/ledgerquery">\n')
 	replot.append('<table>\n')
 	replot.append('<tr><th><label for="block">Enter a Block number, txid, hash, address or a: followed by alias</label></th><td><input type="text" id="block" name="block" value="{}" size="68"/></td></tr>\n'.format(r_block))
+	replot.append('<tr><th><label for="sdate">Start Date (optional)</label></th><td><input type="date" id="sdate" name="sdate" value="{}" size="68"/> 00:00:00 hrs</td></tr>\n'.format(xdate))
+	replot.append('<tr><th><label for="fdate">End Date (optional)</label></th><td><input type="date" id="fdate" name="fdate" value="{}" size="68"/> 23:59:59 hrs</td></tr>\n'.format(ydate))
 	replot.append('<tr><th><label for="Submit Query">Click Submit to List Transactions</label></th><td><button id="Submit Query" name="Submit Query">Submit Query</button></td></tr>\n')
 	replot.append('</table>\n')
 	replot.append('</form>\n')
@@ -1536,6 +1734,35 @@ def mycharts():
 
 	return starter.encode("utf-8")
 	
+@app.route('/tools')
+def mytools():
+
+	initial = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
+
+	initial.append('<table ><tbody><tr>\n')
+	initial.append('<td align="center" style="border:hidden;">')
+	initial.append('<p></p>')
+	initial.append('</td>\n')
+	initial.append('<td align="center" style="border:hidden;">\n')
+	initial.append('<h1>Bismuth Cryptocurrency</h1>\n')
+	initial.append('<h2>Other Tools</h2>\n')
+	initial.append('<p></p>')
+	initial.append('<h3><a href="/geturl">Create a payment URL</a></h3>\n')
+	initial.append('<h3><a href="/realmem">Realtime Mempool</a></h3>\n')		
+	initial.append('</td>\n')
+	initial.append('<td align="center" style="border:hidden;">')
+	initial.append('<p></p>')
+	initial.append('</td>\n')
+	initial.append('</tr></tbody></table>\n')
+	initial.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p>')
+	initial.append('</center>\n')
+	initial.append('</body>\n')
+	initial.append('</html>')
+
+	starter = "" + str(''.join(initial))
+
+	return starter.encode("utf-8")
+	
 @app.route('/details')
 def detailinfo():
 
@@ -1600,6 +1827,134 @@ def detailinfo():
 	
 	return render_template('detail.html', ablock=d_block, atime=d_time, afrom=d_from, ato=d_to, aamount=d_amount, asig=d_sig, atxid=d_txid, apub=d_pub, ahash=d_hash, afee=d_fee, areward=d_reward, aoperation=d_operation, aopen=d_open)
 	
+
+@app.route('/geturl', methods=['GET'])
+def url_form():
+		
+	plotter = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
+	
+	plotter.append('<h2>Bismuth Payment URL Creation Tool</h2>\n')
+	plotter.append('<p><b>Creates a Bismuth payment URL</b></p>\n')
+	plotter.append('<p>For importing into a Bismuth wallet or sending to someone</p>\n')
+	plotter.append('<form method="post" action="/geturl">\n')
+	plotter.append('<table>\n')
+	plotter.append('<tr><th><label for="address">Receiving address</label></th><td><input type="text" id="address" name="address" size="68"/></td></tr>\n')
+	plotter.append('<tr><th><label for="amount">Amount</label></th><td><input type="text" id="amount" name="amount" size="50"/><b> BIS</b></td></tr>\n')
+	plotter.append('<tr><th><label for="operation">Operation text (optional)</label></th><td><input type="text" id="operation" name="operation" size="50"/> 30 Chars. max.</td></tr>\n')
+	plotter.append('<tr><th><label for="message">Message text (optional)</label></th><td><textarea name="message" id="message" rows="10" cols="51"></textarea></td></tr>\n')
+	plotter.append('<tr><th><label for="Submit Query">Click Submit to create payment URL</label></th><td><b><button id="Submit Query" name="Submit Query">Submit</button></b></td></tr>\n')
+	plotter.append('</table>\n')
+	plotter.append('</form>\n')
+	#plotter.append('</p>\n')
+	plotter.append('<p></p>\n')
+	plotter.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p>')
+	plotter.append('</center>\n')
+	plotter.append('</body>\n')
+	plotter.append('</html>')
+	# Initial Form
+
+	html = "" + str(''.join(plotter))
+
+	return html.encode("utf-8")
+	
+@app.route('/geturl', methods=['POST'])
+def url_gen():
+
+	my_add = request.form.get('address')
+	my_amount = request.form.get('amount')
+	my_op = request.form.get('operation')
+	my_mess = request.form.get('message')
+	
+	is_ok = True
+	do_qr = True
+	
+	if not my_add:
+		is_ok = False
+		my_r = "No recipient entered"
+	else:
+		my_add = my_add.strip()
+		if test(my_add) == 3:
+			is_ok = False
+			my_r = "Bad address entered"
+	
+	try:		
+		amdo = Decimal(my_amount)
+	except:
+		is_ok = False
+		my_r = "Invalid Bismuth amount entered"
+
+	if not my_op:
+		my_op = "0"
+	if len(my_op) > 30:
+		is_ok = False
+		my_r = "Operation text over 30 Characters"
+		
+	if not my_mess:
+		my_mess = ""
+		
+	if len(my_mess) > 100000:
+		is_ok = False
+		my_r = "Message text too big"
+		
+	if len(my_mess) > 250:
+		do_qr = False
+	
+	if is_ok:
+		receive_str = bisurl.create_url(app_log, "pay", my_add, my_amount, my_op, my_mess)
+		clr_str = '<p style="color:green">'
+		if do_qr:
+			receive_qr = pyqrcode.create(receive_str)
+			receive_qr_png = receive_qr.png('static/qr_{}{}.png'.format(my_add, my_amount), scale=2)
+		else:
+			receive_qr_png = ''
+	else:
+		receive_str = my_r
+		clr_str = '<p style="color:red">'
+
+	if not is_ok:
+		do_qr = False
+
+	print(receive_str)
+		
+	plotter = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
+	
+	plotter.append('<h2>Bismuth Payment URL Creation Tool</h2>\n')
+	plotter.append('<p><b>Creates a Bismuth payment URL</b></p>\n')
+	plotter.append('<p>Can be imported into Bismuth wallets or sent to someone else</p>\n')
+	plotter.append('<form method="post" action="/geturl">\n')
+	plotter.append('<table>\n')
+	plotter.append('<tr><th><label for="address">Receiving address</label></th><td><input type="text" id="address" name="address" size="68"/></td></tr>\n')
+	plotter.append('<tr><th><label for="amount">Amount</label></th><td><input type="text" id="amount" name="amount" size="50"/><b> BIS</b></td></tr>\n')
+	plotter.append('<tr><th><label for="operation">Operation text (optional)</label></th><td><input type="text" id="operation" name="operation" size="50"/> 30 Chars. max.</td></tr>\n')
+	plotter.append('<tr><th><label for="message">Message text (optional)</label></th><td><textarea name="message" id="message" rows="10" cols="51"></textarea></td></tr>\n')
+	plotter.append('<tr><th><label for="Submit Query">Click Submit to create payment URL</label></th><td><b><button id="Submit Query" name="Submit Query">Submit</button></b></td></tr>\n')
+	plotter.append('</table>\n')
+	plotter.append('</form>\n')
+	#plotter.append('</p>\n')
+	plotter.append('<p></p>\n')
+	plotter.append('<table>\n')
+	plotter.append('<tr><th>RESULT</th></tr>\n')
+	plotter.append('<tr><td><p></p>{}{}</p><p></p></td></tr>\n'.format(clr_str,receive_str))
+	if do_qr:
+		plotter.append('<tr><td align="center"><img src="static/qr_{}{}.png" height="175px"></img></td></tr>\n'.format(my_add, my_amount))
+	plotter.append('</table>\n')	
+	plotter.append('<p></p>\n')
+	plotter.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p>')
+	plotter.append('</center>\n')
+	plotter.append('</body>\n')
+	plotter.append('</html>')
+	# Initial Form
+
+	html = "" + str(''.join(plotter))
+
+	return html.encode("utf-8")
+	
+@app.route('/realmem')
+def realmem():
+	
+	return render_template('client-JustLog.html')
+
+
 @app.route('/api/<param1>/<param2>', methods=['GET'])
 def handler(param1, param2):
 
@@ -1658,9 +2013,9 @@ def handler(param1, param2):
 			conn = sqlite3.connect(bis_root)
 			c = conn.cursor()
 			if mydisplay == 0 or a_display:
-				c.execute("SELECT * FROM transactions WHERE address = ? OR recipient = ? ORDER BY block_height DESC;", (getaddress,getaddress))
+				c.execute("SELECT * FROM transactions WHERE address = ? OR recipient = ? ORDER BY abs(block_height) DESC;", (getaddress,getaddress))
 			else:
-				c.execute("SELECT * FROM transactions WHERE address = ? OR recipient = ? ORDER BY block_height DESC LIMIT ?;", (getaddress,getaddress,str(mydisplay)))
+				c.execute("SELECT * FROM transactions WHERE address = ? OR recipient = ? ORDER BY abs(block_height) DESC LIMIT ?;", (getaddress,getaddress,str(mydisplay)))
 			all = c.fetchall()
 			c.close()
 			conn.close()
@@ -1696,7 +2051,7 @@ def handler(param1, param2):
 			all = []
 			conn = sqlite3.connect(bis_root)
 			c = conn.cursor()
-			c.execute("SELECT * FROM transactions WHERE address = ? OR recipient = ? ORDER BY block_height DESC LIMIT ?;", (getaddress,getaddress,mylimit))
+			c.execute("SELECT * FROM transactions WHERE address = ? OR recipient = ? ORDER BY abs(block_height) DESC LIMIT ?;", (getaddress,getaddress,mylimit))
 			all = c.fetchall()
 			c.close()
 			conn.close()
@@ -1963,15 +2318,21 @@ urls = (
 	'/details', 'Details'
 )
 
+application = tornado.web.Application([
+    (r'/', WSHandler),
+])
+
 if __name__ == "__main__":
 
 	background_thread = threading.Thread(target=buildtoolsdb)
 	background_thread.daemon = True
 	background_thread.start()
-	logging.info("Databases: Start Thread")
+	app_log.info("Databases: Start Thread")
 	
 	http_server = HTTPServer(WSGIContainer(app))
 	http_server.listen(8080)
+	whttp_server = tornado.httpserver.HTTPServer(application)
+	whttp_server.listen(wport)
 	IOLoop.instance().start()
 	
 	#app.run()

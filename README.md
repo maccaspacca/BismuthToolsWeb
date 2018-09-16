@@ -27,6 +27,8 @@ Windows
 4. BS4 ([sudo] [pip] [pip3] install bs4)
 5. Flask
 6. tornado
+7. pyqrcode
+8. requests
 
 Linux e.g. Ubuntu 16.04 LTS
 ===========================
@@ -37,6 +39,8 @@ Linux e.g. Ubuntu 16.04 LTS
 4. BS4 ([sudo] [pip] [pip3] install bs4)
 5. Flask
 6. tornado
+7. pyqrcode
+8. requests
 
 File placement
 ==============
@@ -73,6 +77,16 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 
 Changes
 =======
+
+Version 6.1.0 17/09/2018
+------------------------
+
+1. Bismuth URL creation tool
+2. Realtime local mempool tool
+3. Improved display of mirror blocks
+4. Ledger queries of an address can be date limited
+5. Minor code improvements
+6. Sponsor handling improvements
 
 Version 6.0.3 02/09/2018
 ------------------------

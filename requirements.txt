@@ -2,3 +2,4 @@ Flask
 BeautifulSoup4
 tornado
 requests
+pyqrcode

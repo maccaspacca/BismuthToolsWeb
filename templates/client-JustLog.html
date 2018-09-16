@@ -25,8 +25,83 @@ table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-w
 <meta property="xbm:version" content="201" />
 <meta name="description" content="Bismuth Cryptocurrency tools with block explorer, blockchain query, miner information and richlist" />
 <title>Bismuth Tools Web v6.1.0</title>
+
+<!-- Websocket -->
+<script type="text/javascript">
+
+// Config
+var port = 9000;
+var host = "ws://127.0.0.1:"+port; // No need to change this if using localhost
+var consoleLogOnScreen = true; // If true shows the console.log in an HTML element
+
+//Declare Variables
+var socket;
+var explodedValues = [0,0,0,0]; //initial value for the plot = 0
+
+
+function init() {
+	
+	if (consoleLogOnScreen) {
+	// Function to output console.log to html element (logs on screen)
+	// From: http://stackoverflow.com/a/20256785/1709835
+	(function () {
+		if (!console) {
+	        console = {};
+	    }
+	    var old = console.log;
+	    var logger = document.getElementById('log');
+	    console.log = function (message) {
+	            logger.innerHTML += message + '<br />';
+	    }
+	})();
+	}
+	
+	// Websocket!
+	try {
+		socket = new WebSocket(host);
+		//console.log('WebSocket status '+socket.readyState);
+		console.log('<b>Information:</b> Querying node....');
+		socket.onopen    = function(msg) {
+							   document.getElementById('status').innerHTML = '<h3 style="color:green;">Status: Connected</h3>';
+							   //console.log("Welcome - status "+this.readyState); 
+						   };
+		socket.onmessage = function(msg) { 
+							   document.getElementById('log').innerHTML = '';
+							   console.log("<b>Information:</b> "+msg.data);
+							
+						   };
+		socket.onclose   = function(msg) { 
+							   document.getElementById('status').innerHTML = '<h3 style="color:red;">Status: Disconnected</h3>';
+							   document.getElementById('log').innerHTML = '';
+							   console.log("<b>Information:</b> Disconnected");
+							   //console.log("Disconnected - status "+this.readyState); 
+						   };
+	}
+	catch(ex){ 
+		console.log(ex); 
+	}
+	
+}
+
+function quit(){
+	if (socket != null) {
+		console.log("Close Socket");
+		socket.close();
+		socket=null;
+	}
+}
+
+function reconnect() {
+	quit();
+	init();
+}
+
+</script>
+
 </head>
-<body background="static/explorer_bg.png">
+
+<body onload="init()" background="static/explorer_bg.png">
+
 <center>
 <table style="border:0">
 <tr style="border:0"><td style="border:0">
@@ -43,58 +118,15 @@ table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-w
 </ul>
 </td></tr>
 </table>
+
+<h2>Realtime Bismuth Mempool</h2>
+<h3>Local Mempool Data</h3>
+<button onclick="reconnect()">Reconnect</button>
+<div id="status"></div>
+
 </center>
-<center>
-<table ><tbody><tr>
-<td align="center" style="border:hidden;width:600px;">
-<h1>Bismuth Cryptocurrency</h1>
-<h2>Transaction Information</h2>
-<p></p>
-</td>
-</tr>
-</tbody></table>
-<table style="table-layout: fixed; width: 100%><tbody>
-</center>
-<tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>Block:</b> {{ ablock }}
-</td><td style="border:hidden"></td></tr><tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>Timestamp (GMT):</b> {{ atime }}
-</td><td style="border:hidden"></td></tr><tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>From:</b> {{ afrom }}
-</td><td style="border:hidden"></td></tr><tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>To:</b> {{ ato }}
-</td><td style="border:hidden"></td></tr><tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>Amount:</b> {{ aamount }}
-</td><td style="border:hidden"></td></tr>
-<tr>
-<td align="left" style="border:hidden;width:600px;word-wrap:break-word;">
-<b>Signature:</b> {{ asig }}
-</td><td style="border:hidden;width:6px;"></td></tr>
-<tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>Transaction ID:</b> {{ atxid }}
-</td><td style="border:hidden;width:6px;"></td></tr>
-<tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>Block Hash:</b> {{ ahash }}
-</td><td style="border:hidden"></td></tr><tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>Fee:</b> {{ afee }}
-</td><td style="border:hidden"></td></tr><tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>Reward:</b> {{ areward }}
-</td><td style="border:hidden"></td></tr><tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>Operation:</b> {{ aoperation }}
-</td><td style="border:hidden"></td></tr><tr>
-<td align="left" style="border:hidden;width:600px;">
-<b>Openfield (first 1000 Characters):</b> {{ aopen }}
-</td><td style="border:hidden"></td></tr></tbody></table>
-<center><p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p></center>
+
+<div id="log"></div>
+
 </body>
 </html>
