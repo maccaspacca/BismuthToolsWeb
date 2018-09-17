@@ -115,7 +115,7 @@ print("Bismuth path = {}".format(bis_root))
 
 # Classes start
 
-wport = 9000 #Websocket Port
+wport = 8880 #Websocket Port
 timeInterval= 5000 #Milliseconds
 
 class WSHandler(tornado.websocket.WebSocketHandler):
