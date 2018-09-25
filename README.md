@@ -78,6 +78,14 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 Changes
 =======
 
+Version 6.2.0 25/09/2018
+------------------------
+
+1. Front page display ordering fix
+2. Reduction of code
+3. Minor look and feel changes
+4. Increase template use
+
 Version 6.1.0 17/09/2018
 ------------------------
 

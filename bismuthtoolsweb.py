@@ -1,6 +1,6 @@
 # Bismuth Tools Web
-# Version 6.1.0
-# Date 17/09/2018
+# Version 6.2.0
+# Date 25/09/2018
 # Copyright Maccaspacca 2017, 2018
 # Copyright Hclivess 2016 to 2018
 # Author Maccaspacca
@@ -35,10 +35,7 @@ global my_os
 global bis_root
 global myaddress
 global myrate
-global mysponsor
 global disp_curr
-
-myversion = "6.1.0"
 
 disp_curr = ["BTC","USD","EUR","GBP","CNY","AUD"]
 
@@ -49,7 +46,6 @@ app_log.info("logging initiated")
 config = cp.ConfigParser()
 config.readfp(open(r'toolsconfig.ini'))
 app_log.info("Reading config file.....")
-mysponsor = int(config.get('My Sponsors', 'sponsors'))
 myaddress = config.get('My Sponsors', 'address')
 myrate = float(config.get('My Sponsors', 'rate'))
 myhost = config.get('My Sponsors', 'hostname')
@@ -94,11 +90,6 @@ if bis_mode == "testnet":
 	port = "2829"
 else:
 	port = "5658"
-
-if mysponsor == 1:
-	mysponsor = True
-else:
-	mysponsor = False
 
 my_os = platform.system()
 my_os = my_os.lower()
@@ -217,24 +208,7 @@ def get_cmc_val(alt_curr):
 		s = 0.00000001
 
 	return s
-	
-def myoginfo():
 
-	doda = []
-	doconfig = cp.ConfigParser()
-	doconfig.readfp(open(r'toolsconfig.ini'))
-	app_log.info("Reading config file.....")
-	doda.append(doconfig.get('My Oginfo', 'og_title'))
-	doda.append(doconfig.get('My Oginfo', 'og_description'))
-	doda.append(doconfig.get('My Oginfo', 'og_url'))
-	doda.append(doconfig.get('My Oginfo', 'og_site_name'))
-	doda.append(doconfig.get('My Oginfo', 'og_image'))
-
-	#app_log.info("Config file read completed")
-	
-	doconfig = None
-	
-	return doda
 	
 def display_time(seconds, granularity=2):
 
@@ -795,21 +769,26 @@ def getcirc():
 	
 	return allcirc
 
-# get latest 15 transactions
+# get latest transactions
 
 def getall():
 
 	conn = sqlite3.connect(bis_root)
 	conn.text_factory = str
 	c = conn.cursor()
-	c.execute("SELECT * FROM transactions ORDER BY timestamp DESC LIMIT ?;", (front_display,))
-
-	myall = c.fetchall()
+	c.execute("SELECT * FROM transactions ORDER BY timestamp DESC LIMIT ?;", ((front_display*2),))
+	un_all = c.fetchall()
+	
+	sor_all = sorted(un_all, key=lambda tup: abs(tup[0]), reverse=True)
+	
+	myall = sor_all[:49]
 	
 	c.close()
 	conn.close()
-	
+
 	return myall
+	
+# get latest transactions
 	
 def get_open(thisblock,thisopen):
 
@@ -929,7 +908,7 @@ def get_the_details(getdetail):
 	
 def get_sponsor():
 
-	if mysponsor:
+	try:
 	
 		app_log.info("Sponsors: Get sites from tools.db")
 		conn = sqlite3.connect('tools.db')
@@ -965,7 +944,7 @@ def get_sponsor():
 		
 		app_log.info("Sponsors: {} was displayed".format(sponsor_result[x_go][2]))
 	
-	else:
+	except:
 		sponsor_display = []
 		sponsor_display.append('<p></p>')
 
@@ -986,67 +965,11 @@ def bgetvars(myaddress):
 		
 	return miner_details
 	
-
-def my_head(bo):
-
-	mhead = []
-	dado = myoginfo()
-	
-	mhead.append('<!doctype html>\n')
-	mhead.append('<html>\n')
-	mhead.append('<head>\n')
-	mhead.append('<link rel = "icon" href = "static/explorer.ico" type = "image/x-icon" />\n')
-	mhead.append('<style>\n')
-	mhead.append('h1, h2, p, li, td, label {font-family: Verdana;}\n')
-	mhead.append('body {font-size: 75%;}\n')
-	mhead.append('ul {list-style-type: none;margin: 0;padding: 0;overflow: hidden;background-color: #600080;}\n')
-	mhead.append('li {float: left;}\n')
-	mhead.append('li a {display: inline-block;color: white;text-align: center;padding: 14px 16px;text-decoration: none;}\n')
-	mhead.append('li a:hover {background-color: #111;}\n')
-	mhead.append('.btn-link{border:none;outline:none;background:none;cursor:pointer;color:#0000EE;padding:0;text-decoration:underline;font-family:inherit;font-size:inherit;}\n')
-	mhead.append(bo + '\n')
-	mhead.append('</style>\n')
-	mhead.append('<meta property="og:type" content="website" />\n')
-	mhead.append('<meta property="og:title" content="{}" />\n'.format(dado[0]))
-	mhead.append('<meta property="og:description" content="{}" />\n'.format(dado[1]))
-	mhead.append('<meta property="og:url" content="{}" />\n'.format(dado[2]))
-	mhead.append('<meta property="og:site_name" content="{}" />\n'.format(dado[3]))
-	mhead.append('<meta property="og:image" content="{}" />\n'.format(dado[4]))
-	mhead.append('<meta property="og:image:width" content="200" />\n')
-	mhead.append('<meta property="og:image:height" content="200" />\n')
-	mhead.append('<meta property="og:locale" content="en_US" />\n')
-	mhead.append('<meta property="xbm:version" content="201" />\n')
-	mhead.append('<meta name="description" content="{}" />\n'.format(dado[1]))
-	mhead.append('<title>{} v{}</title>\n'.format(dado[0],myversion))
-	mhead.append('</head>\n')
-	mhead.append('<body background="static/explorer_bg.png">\n')
-	mhead.append('<center>\n')
-	mhead.append('<table style="border:0">\n')
-	mhead.append('<tr style="border:0"><td style="border:0">\n')
-	mhead.append('<ul>\n')
-	mhead.append('<li><a href="">Menu:</a></li>\n')
-	mhead.append('<li><a href="/">Home</a></li>\n')
-	mhead.append('<li><a href="/ledgerquery">Ledger Query</a></li>\n')
-	mhead.append('<li><a href="/minerquery">Miner Stats</a></li>\n')
-	mhead.append('<li><a href="/richest">Rich List</a></li>\n')
-	if mysponsor:
-		mhead.append('<li><a href="/sponsorinfo">Sponsors</a></li>\n')
-	mhead.append('<li><a href="/apihelp">API</a></li>\n')
-	mhead.append('<li><a href="/charts">Charts</a></li>\n')
-	mhead.append('<li><a href="/tools">Tools</a></li>\n')
-	mhead.append('</ul>\n')
-	mhead.append('</td></tr>\n')
-	mhead.append('</table>\n')
-
-	return mhead
 	
 #////////////////////////////////////////////////////////////
 #                       MAIN APP
 # ///////////////////////////////////////////////////////////
 
-#@app.route('/static/<filename>')
-#def server_static(filename):
-	#return static_file(filename, root='static/')
 
 @app.route('/')
 def home():
@@ -1096,11 +1019,12 @@ def home():
 		thisview.append('</tr>\n')
 		i = i+1		
 
-	initial = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
-
+	initial = []
+	sponsor1 = get_sponsor()
+	sponsor2 = get_sponsor()
+	
 	initial.append('<table ><tbody><tr>\n')
 	initial.append('<td align="center" style="border:hidden;">')
-	sponsor1 = get_sponsor()
 	initial = initial + sponsor1
 	initial.append('</td>\n')
 	initial.append('<td align="center" style="border:hidden;">\n')
@@ -1113,14 +1037,15 @@ def home():
 	initial.append('<h2>Last {} Transactions</h2>\n'.format(front_display))
 	initial.append('</td>\n')
 	initial.append('<td align="center" style="border:hidden;">')
-	sponsor2 = get_sponsor()
 	initial = initial + sponsor2
 	initial.append('</td>\n')
 	initial.append('</tr><tr>\n')
 	initial.append('<td colspan="3" align="center" style="border:hidden;">\n')
 	cmcstats = home_stats
 	initial.append('{}'.format(cmcstats))
-	initial.append('</td>\n')
+	initial.append('</td></tr>\n')
+	initial.append('<tr><td colspan="3" align="center" style="border:hidden;">\n')
+	initial.append('Price information courtesy of coinmarketcap.com</td>\n')
 	initial.append('</tr></tbody></table>\n')
 	initial.append('<table style="font-size: 76%">\n')
 	initial.append('<tr>\n')
@@ -1135,15 +1060,10 @@ def home():
 	initial.append('</tr>\n')
 	initial = initial + thisview
 	initial.append('</table>\n')
-	initial.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p>')
-	initial.append('<p>Price information courtesy of coinmarketcap.com</p>')
-	initial.append('</center>\n')
-	initial.append('</body>\n')
-	initial.append('</html>')
-
+	
 	starter = "" + str(''.join(initial))
-
-	return starter.encode("utf-8")
+	
+	return render_template('base.html', starter=starter)
 	
 @app.route('/diff_chart')
 def d_chart():
@@ -1239,8 +1159,8 @@ def minerquery():
 			j = j+1
 		view.append("</tr>\n")
 		i = i+1
-	
-	lister = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
+		
+	lister = []
 	
 	lister.append('<h2>Bismuth Miner Statistics</h2>\n')
 	lister.append('<p><b>Hint: Click on an address to see more detail</b></p>\n')
@@ -1255,21 +1175,18 @@ def minerquery():
 	lister.append('</tr>\n')
 	lister = lister + view
 	lister.append('</table>\n')
-	lister.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p>')
-	lister.append('</center>\n')
-	lister.append('</body>\n')
-	lister.append('</html>')
+	
+	starter = "" + str(''.join(lister))
+	
+	return render_template('base.html', starter=starter)
 
-	html = "" + str(''.join(lister))
-
-	return html.encode("utf-8")
 
 @app.route('/ledgerquery', methods=['GET'])
 def ledger_form():
 		
 	mylatest = latest()
 
-	plotter = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
+	plotter = []
 	
 	plotter.append('<h2>Bismuth Ledger Query Tool</h2>\n')
 	plotter.append('<p>Get a List of Transactions</p>\n')
@@ -1284,13 +1201,13 @@ def ledger_form():
 	#plotter.append('</p>\n')
 	plotter.append('<p>Note: all queries are case sensitive</p>\n')
 	plotter.append('<p>The latest block: {} was found {} seconds ago at difficulty {}</p>\n'.format(str(mylatest[0]),str(int(mylatest[1])),str(mylatest[2])))
-	plotter.append('</body>\n')
-	plotter.append('</html>')
+
 	# Initial Form
+	
+	starter = "" + str(''.join(plotter))
+	
+	return render_template('base.html', starter=starter)
 
-	html = "" + str(''.join(plotter))
-
-	return html.encode("utf-8")
 
 @app.route('/ledgerquery', methods=['POST'])
 def ledger_query():
@@ -1461,8 +1378,8 @@ def ledger_query():
 		view.append('<td>{}</td>'.format(x_open))
 		view.append('</tr>\n')
 		i = i+1
-	
-	replot = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
+
+	replot = []
 	
 	replot.append('<h2>Bismuth Ledger Query Tool</h2>\n')
 	replot.append('<p>Get a List of Transactions</p>\n')
@@ -1493,20 +1410,16 @@ def ledger_query():
 	replot.append('</tr>\n')
 	replot = replot + view
 	replot.append('</table>\n')
-	replot.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p>')
-	replot.append('</center>\n')
-	replot.append('</body>\n')
-	replot.append('</html>')
 	
-	html1 = "" + str(''.join(replot))
+	starter = "" + str(''.join(replot))
+	
+	return render_template('base.html', starter=starter)
 
-	return html1.encode("utf-8")
 
 @app.route('/sponsorinfo')
 def sponsorinfo():
-
-	#initial = my_head('table, th, td {border: 0;}')
-	initial = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
+	
+	initial = []
 
 	initial.append('<table ><tbody><tr>\n')
 	initial.append('<td align="center" style="border:hidden;">')
@@ -1528,14 +1441,14 @@ def sponsorinfo():
 	initial.append('<p></p>')
 	initial.append('</td>\n')
 	initial.append('</tr></tbody></table>\n')
-	initial.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p>')
-	initial.append('</center>\n')
-	initial.append('</body>\n')
-	initial.append('</html>')
-
+	
 	starter = "" + str(''.join(initial))
+	
+	return render_template('base.html', starter=starter)
 
-	return starter.encode("utf-8")
+	#starter = "" + str(''.join(initial))
+
+	#return starter.encode("utf-8")
 
 @app.route('/richest', methods=['GET'])
 def richest_form():
@@ -1574,7 +1487,8 @@ def richest_form():
 				view.append("</tr>\n")
 		i = i+1
 		
-	lister = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
+
+	lister = []
 	
 	lister.append('<h2>Bismuth Rich List</h2>\n')
 	lister.append('<p><b>List of all Bismuth addresses with more than {} BIS</b></p>\n'.format(str(bis_limit)))
@@ -1605,15 +1519,14 @@ def richest_form():
 	lister.append('</tr>\n')
 	lister = lister + view
 	lister.append('</table>\n')
-	lister.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p>')
-	lister.append('<p>Price information courtesy of coinmarketcap.com</p>')
-	lister.append('</center>\n')
-	lister.append('</body>\n')
-	lister.append('</html>')
 
-	html = "" + str(''.join(lister))
+	starter = "" + str(''.join(lister))
+	
+	return render_template('base.html', starter=starter)
 
-	return html.encode("utf-8")
+	#html = "" + str(''.join(lister))
+
+	#return html.encode("utf-8")
 
 @app.route('/richest', methods=['POST'])
 def richest_result():
@@ -1655,10 +1568,10 @@ def richest_result():
 				view.append("</tr>\n")
 		i = i+1
 	
-	lister = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
+	lister = []
 	
 	lister.append('<h2>Bismuth Rich List</h2>\n')
-	lister.append('<p><b>List of all Bismuth address balances</b></p>\n')
+	lister.append('<p><b>List of all Bismuth addresses with more than {} BIS</b></p>\n'.format(str(bis_limit)))
 	lister.append('<p>Note: this page may be up to 45 mins behind</p>\n')
 	lister.append('<p></p>\n')
 	lister.append('<form method="post" action="/richest">\n')
@@ -1686,14 +1599,11 @@ def richest_result():
 	lister.append('</tr>\n')
 	lister = lister + view
 	lister.append('</table>\n')
-	lister.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p>')
-	lister.append('</center>\n')
-	lister.append('</body>\n')
-	lister.append('</html>')
 
-	html = "" + str(''.join(lister))
+	starter = "" + str(''.join(lister))
+	
+	return render_template('base.html', starter=starter)
 
-	return html.encode("utf-8")
 	
 @app.route('/apihelp')
 def apihelp():
@@ -1704,64 +1614,6 @@ def apihelp():
 		a_text = " ({} record limit)".format(str(mydisplay))
 	
 	return render_template('apihelp.html', atext=a_text)
-
-@app.route('/charts')
-def mycharts():
-
-	initial = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
-
-	initial.append('<table ><tbody><tr>\n')
-	initial.append('<td align="center" style="border:hidden;">')
-	initial.append('<p></p>')
-	initial.append('</td>\n')
-	initial.append('<td align="center" style="border:hidden;">\n')
-	initial.append('<h1>Bismuth Cryptocurrency</h1>\n')
-	initial.append('<h2>Information Charts</h2>\n')
-	initial.append('<p></p>')
-	initial.append('<h3><a href="/diff_chart">Difficulty Chart</a></h3>\n')
-	initial.append('<h3><a href="/time_chart">Blocktime Chart</a></h3>\n')		
-	initial.append('</td>\n')
-	initial.append('<td align="center" style="border:hidden;">')
-	initial.append('<p></p>')
-	initial.append('</td>\n')
-	initial.append('</tr></tbody></table>\n')
-	initial.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p>')
-	initial.append('</center>\n')
-	initial.append('</body>\n')
-	initial.append('</html>')
-
-	starter = "" + str(''.join(initial))
-
-	return starter.encode("utf-8")
-	
-@app.route('/tools')
-def mytools():
-
-	initial = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
-
-	initial.append('<table ><tbody><tr>\n')
-	initial.append('<td align="center" style="border:hidden;">')
-	initial.append('<p></p>')
-	initial.append('</td>\n')
-	initial.append('<td align="center" style="border:hidden;">\n')
-	initial.append('<h1>Bismuth Cryptocurrency</h1>\n')
-	initial.append('<h2>Other Tools</h2>\n')
-	initial.append('<p></p>')
-	initial.append('<h3><a href="/geturl">Create a payment URL</a></h3>\n')
-	initial.append('<h3><a href="/realmem">Realtime Mempool</a></h3>\n')		
-	initial.append('</td>\n')
-	initial.append('<td align="center" style="border:hidden;">')
-	initial.append('<p></p>')
-	initial.append('</td>\n')
-	initial.append('</tr></tbody></table>\n')
-	initial.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p>')
-	initial.append('</center>\n')
-	initial.append('</body>\n')
-	initial.append('</html>')
-
-	starter = "" + str(''.join(initial))
-
-	return starter.encode("utf-8")
 	
 @app.route('/details')
 def detailinfo():
@@ -1831,7 +1683,7 @@ def detailinfo():
 @app.route('/geturl', methods=['GET'])
 def url_form():
 		
-	plotter = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
+	plotter = []
 	
 	plotter.append('<h2>Bismuth Payment URL Creation Tool</h2>\n')
 	plotter.append('<p><b>Creates a Bismuth payment URL</b></p>\n')
@@ -1847,15 +1699,10 @@ def url_form():
 	plotter.append('</form>\n')
 	#plotter.append('</p>\n')
 	plotter.append('<p></p>\n')
-	plotter.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p>')
-	plotter.append('</center>\n')
-	plotter.append('</body>\n')
-	plotter.append('</html>')
-	# Initial Form
 
-	html = "" + str(''.join(plotter))
-
-	return html.encode("utf-8")
+	starter = "" + str(''.join(plotter))
+	
+	return render_template('base.html', starter=starter)
 	
 @app.route('/geturl', methods=['POST'])
 def url_gen():
@@ -1916,7 +1763,7 @@ def url_gen():
 
 	print(receive_str)
 		
-	plotter = my_head('table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-webkit-column-width: 100%;-moz-column-width: 100%;column-width: 100%;}')
+	plotter = []
 	
 	plotter.append('<h2>Bismuth Payment URL Creation Tool</h2>\n')
 	plotter.append('<p><b>Creates a Bismuth payment URL</b></p>\n')
@@ -1939,15 +1786,11 @@ def url_gen():
 		plotter.append('<tr><td align="center"><img src="static/qr_{}{}.png" height="175px"></img></td></tr>\n'.format(my_add, my_amount))
 	plotter.append('</table>\n')	
 	plotter.append('<p></p>\n')
-	plotter.append('<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p>')
-	plotter.append('</center>\n')
-	plotter.append('</body>\n')
-	plotter.append('</html>')
-	# Initial Form
 
-	html = "" + str(''.join(plotter))
+	starter = "" + str(''.join(plotter))
+	
+	return render_template('base.html', starter=starter)
 
-	return html.encode("utf-8")
 	
 @app.route('/realmem')
 def realmem():

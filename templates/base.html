@@ -28,8 +28,12 @@ table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-w
 <meta property="og:image:height" content="200" />
 <meta property="og:locale" content="en_US" />
 <meta property="xbm:version" content="201" />
+<meta property="template_name" content="base.html" />
 <meta name="description" content="Bismuth Cryptocurrency tools with block explorer, blockchain query, miner information and richlist" />
+
 <title>Bismuth Tools Web v6.2.0</title>
+<!-- import plugin script -->
+<script src='static/Chart.min.js'></script>
 </head>
 <body background="static/explorer_bg.png">
 <center>
@@ -60,84 +64,7 @@ table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-w
 </ul>
 </td></tr>
 </table>
-</center>
-<center>
-<table ><tbody><tr>
-<td align="center" style="border:hidden;width:600px;">
-<h1>Bismuth Cryptocurrency</h1>
-<h2>API Help</h2>
-<p><b>Webtools includes a public API returning various JSON results</p>
-<p>The general format of a query is: http://bismuth.online/api/parameter1/parameter2</b></p>
-<p></p>
-</td>
-</tr>
-</tbody></table>
-<table><tbody>
-<tr>
-<td><b>Parameter 1</b></td>
-<td><b>Parameter 2</b></td>
-<td><b>Notes</b></td>
-</tr>
-<tr bgcolor="#E8E8E8">
-<td>stats</td>
-<td>circulation</td>
-<td>Gets the total number of Bismuth in circulation</td>
-</tr>
-<tr bgcolor="white">
-<td>stats</td>
-<td>latestblock</td>
-<td>Gets information about the last block found</td>
-</tr>
-<tr bgcolor="#E8E8E8">
-<td>address</td>
-<td>Bismuth address</td>
-<td><p>Gets summary information about a Bismuth address
-<p>Insert a: and a valid alias as an alternative</p></td>
-</tr>
-<tr bgcolor="white">
-<td>getall</td>
-<td>Bismuth address</td>
-<td><p>Gets a list of transactions against a Bismuth address{{ atext }}</p>
-<p>Insert a: and a valid alias as an alternative</p></td>
-</tr>
-<tr bgcolor="#E8E8E8">
-<td>block</td>
-<td>Block number</td>
-<td>Gets information about a Bismuth block</td>
-</tr>
-<tr bgcolor="white">
-<td>hash</td>
-<td>Hash string</td>
-<td>Gets information about a Bismuth hash</td>
-</tr>
-<tr bgcolor="#E8E8E8">
-<td>txid</td>
-<td>Transaction ID</td>
-<td><p>Gets the details for a Bismuth transaction</p>
-<p><i>Note: replace any forward slashes with a period or full stop</i></p></td>
-</tr>
-<tr bgcolor="white">
-<td>richlist</td>
-<td>Input a number or the word all</td>
-<td>Gets a list of top Bismuth wallets to the number specified (or all) sorted by wallet balance</td>
-</tr>
-<tr bgcolor="#E8E8E8">
-<td>miners</td>
-<td>Input a number or the word all</td>
-<td>Gets a list of the top Bismuth miners to the number specified (or all) sorted by blocks found</td>
-</tr>
-<tr bgcolor="white">
-<td>aminer</td>
-<td>Miner address</td>
-<td><p>Gets more information about a specific Bismuth miner</p>
-<p>Insert a: and a valid alias as an alternative</p></td>
-</tr>
-<tr bgcolor="#E8E8E8">
-<td>diffhist</td>
-<td>Input a number of blocks, greater than 10</td>
-<td>Gets the difficulty history for a specific number of previous blocks</td>
-</tr>
-</tbody></table>
-<center><p></p><p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p></center>
+{{ starter|safe }}
+<p>&copy; Copyright: Maccaspacca and HCLivess, 2018</p><p></p></center>
 </body>
 </html>
