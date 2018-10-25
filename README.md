@@ -78,6 +78,11 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 Changes
 =======
 
+Version 6.2.1 25/10/2018
+------------------------
+
+1. Circulation fixes
+
 Version 6.2.0 25/09/2018
 ------------------------
 

@@ -1,6 +1,6 @@
 # Bismuth Tools Web
-# Version 6.2.0
-# Date 25/09/2018
+# Version 6.2.1
+# Date 25/10/2018
 # Copyright Maccaspacca 2017, 2018
 # Copyright Hclivess 2016 to 2018
 # Author Maccaspacca
@@ -587,6 +587,46 @@ def sponsor_list(thisaddress,thisrate):
 			
 	return the_sponsors
 	
+# get coins in circulation
+
+def getcirc():
+
+	conn = sqlite3.connect(bis_root)
+	conn.text_factory = str
+	c = conn.cursor()
+	
+	c.execute("SELECT sum(reward) FROM transactions;")
+
+	allcirc = c.fetchone()[0]
+	
+	c.execute("SELECT sum(amount) FROM transactions WHERE address = 'Development Reward';")
+	
+	alldev = c.fetchone()[0]
+
+	c.execute("SELECT sum(amount) FROM transactions WHERE address = 'Hyperblock';")
+	
+	allhyp = c.fetchone()[0]
+	
+	c.execute("SELECT sum(amount) FROM transactions WHERE address = 'Hypernode Payouts';")
+	
+	allmno = c.fetchone()[0]
+	
+	if not allhyp:
+		allhyp = 0
+	if not alldev:
+		alldev = 0
+	if not allmno:
+		allmno = 0
+
+	allcirc = float(allcirc) + float(alldev) + float(allhyp) + float(allmno)
+	
+	allcirc = "{:.8f}".format(allcirc)
+
+	c.close()
+	conn.close()	
+	
+	return allcirc
+	
 def updatedb():
 
 	print("Updating database.....wait")
@@ -674,6 +714,7 @@ def buildtoolsdb():
 
 	global home_stats
 	global cmc_vals
+	global circ_val
 	cmc_vals = []
 	home_stats = get_cmc_info(cust_curr)
 	cmc_vals.append(get_cmc_val("BTC"))
@@ -687,6 +728,7 @@ def buildtoolsdb():
 	cmc_vals.append(get_cmc_val("CNY"))
 	time.sleep(1)
 	cmc_vals.append(get_cmc_val("AUD"))
+	circ_val = getcirc()
 	
 	updatedb()
 	
@@ -710,6 +752,7 @@ def buildtoolsdb():
 		cmc_vals.append(get_cmc_val("CNY"))
 		time.sleep(1)
 		cmc_vals.append(get_cmc_val("AUD"))
+		circ_val = getcirc()
 		for f in glob("static/qr*.png"):
 			os.remove(f)
 		i +=1
@@ -735,39 +778,6 @@ def checkstart():
 
 latest()
 checkstart()
-
-# get coins in circulation
-
-def getcirc():
-
-	conn = sqlite3.connect(bis_root)
-	conn.text_factory = str
-	c = conn.cursor()
-	c.execute("SELECT sum(reward) FROM transactions;")
-
-	allcirc = c.fetchone()[0]
-	
-	c.execute("SELECT sum(amount) FROM transactions WHERE address = 'Development Reward';")
-	
-	alldev = c.fetchone()[0]
-
-	c.execute("SELECT sum(amount) FROM transactions WHERE address = 'Hyperblock';")
-	
-	allhyp = c.fetchone()[0]
-	
-	if not allhyp:
-		allhyp = 0
-	if not alldev:
-		alldev = 0
-
-	allcirc = float(allcirc) + float(alldev) + float(allhyp)
-	
-	allcirc = "{:.8f}".format(allcirc)
-
-	c.close()
-	conn.close()	
-	
-	return allcirc
 
 # get latest transactions
 
@@ -974,7 +984,7 @@ def bgetvars(myaddress):
 @app.route('/')
 def home():
 
-	currcoins = getcirc()
+	currcoins = circ_val
 	thisall = getall()
 	
 	thisview = []
@@ -1803,7 +1813,7 @@ def handler(param1, param2):
 
 	if param1 == "stats":
 		if param2 == "circulation":
-			x = getcirc()
+			x = circ_val
 			return json.dumps({'circulation':str(x)}), 200, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
 
 		elif param2 == "latestblock":
