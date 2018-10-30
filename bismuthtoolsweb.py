@@ -1,6 +1,6 @@
 # Bismuth Tools Web
-# Version 6.2.1
-# Date 25/10/2018
+# Version 6.2.2
+# Date 30/10/2018
 # Copyright Maccaspacca 2017, 2018
 # Copyright Hclivess 2016 to 2018
 # Author Maccaspacca
@@ -53,7 +53,7 @@ try:
 	mydisplay = int(config.get('My Sponsors', 'display'))
 except:
 	mydisplay = 0
-bis_root = config.get('My Bismuth', 'dbpath')
+db_root = config.get('My Bismuth', 'dbpath')
 try:
 	front_display = config.get('My Sponsors', 'front')
 except:
@@ -88,21 +88,41 @@ config = None
 
 if bis_mode == "testnet":
 	port = "2829"
+	db_name = "test.db"
 else:
 	port = "5658"
-
+	db_name = "ledger.db"
+	
 my_os = platform.system()
 my_os = my_os.lower()
 
+bis_root = "{}{}".format(db_root,db_name)
+
 if "linux" in my_os:
 	bis_root = os.path.expanduser('{}'.format(bis_root))
+	db_root = os.path.expanduser('{}'.format(db_root))
 elif "windows" in my_os:
 	pass
 else: # if its not windows then probably a linux or unix variant
 	pass
+	
+print("Bismuth DB path = {}".format(bis_root))
+app_log.info("Bismuth DB path = {}".format(bis_root))
+print("Bismuth DB root = {}".format(db_root))
+app_log.info("Bismuth DB root = {}".format(db_root))
 
-print("Bismuth path = {}".format(bis_root))
+db_hyper = False
 
+if os.path.isfile('{}hyper.db'.format(db_root)):
+	db_hyper = True
+	hyper_root = '{}hyper.db'.format(db_root)
+else:
+	hyper_root = bis_root # just in case
+	
+app_log.info("Hyper.db exists = {}".format(db_hyper))
+print("Hyper.db exists = {}".format(db_hyper))
+app_log.info("Hyper.db path = {}".format(hyper_root))
+print("Hyper.db path = {}".format(hyper_root))
 
 # Classes start
 
@@ -535,7 +555,7 @@ def refresh(testAddress,typical):
 		
 	r_alias = get_alias(testAddress)
 	
-	get_stuff = [str(credit),str(debit),str(rewards),str(fees),str(balance),t_max, t_min, b_count, r_alias]
+	get_stuff = ["{:.8f}".format(credit),"{:.8f}".format(debit),"{:.8f}".format(rewards),"{:.8f}".format(fees),"{:.8f}".format(balance),t_max, t_min, b_count, r_alias]
 		
 	return get_stuff
 	
@@ -783,7 +803,10 @@ checkstart()
 
 def getall():
 
-	conn = sqlite3.connect(bis_root)
+	if db_hyper:
+		conn = sqlite3.connect(hyper_root)
+	else:
+		conn = sqlite3.connect(bis_root)
 	conn.text_factory = str
 	c = conn.cursor()
 	c.execute("SELECT * FROM transactions ORDER BY timestamp DESC LIMIT ?;", ((front_display*2),))
@@ -903,15 +926,37 @@ def get_the_details(getdetail):
 
 	m_stuff = "{}%".format(str(getdetail))
 	
-	conn = sqlite3.connect(bis_root)
-	conn.text_factory = str
-	c = conn.cursor()
-	c.execute("SELECT * FROM transactions WHERE signature LIKE ?;", (m_stuff,))
-
-	m_detail = c.fetchone()
-	#print(m_detail)
-	c.close()
-	conn.close()
+	if db_hyper:
+	
+		conn = sqlite3.connect(hyper_root)
+		conn.text_factory = str
+		c = conn.cursor()
+		c.execute("SELECT * FROM transactions WHERE signature LIKE ?;", (m_stuff,))
+		m_detail = c.fetchone()
+		#print(m_detail)
+		c.close()
+		conn.close()
+		
+		if not m_detail:
+		
+			conn = sqlite3.connect(bis_root)
+			conn.text_factory = str
+			c = conn.cursor()
+			c.execute("SELECT * FROM transactions WHERE signature LIKE ?;", (m_stuff,))
+			m_detail = c.fetchone()
+			#print(m_detail)
+			c.close()
+			conn.close()
+	
+	else:
+		conn = sqlite3.connect(bis_root)
+		conn.text_factory = str
+		c = conn.cursor()
+		c.execute("SELECT * FROM transactions WHERE signature LIKE ?;", (m_stuff,))
+		m_detail = c.fetchone()
+		#print(m_detail)
+		c.close()
+		conn.close()	
 	
 	return m_detail
 	
@@ -1274,8 +1319,13 @@ def ledger_query():
 		
 		if float(myxtions[0]) or float(myxtions[2]) > 0:
 		
-			extext = "<p style='color:#08750A'><b>ADDRESS FOUND | Credits: {} | Debits: {} | Rewards: {} |".format(myxtions[0],myxtions[1],myxtions[2])
-			extext = extext + " Fees: {} | BALANCE: {}</b></p>".format(myxtions[3],myxtions[4])
+			if myxtions[8] == "":
+				extext = "<p style='color:#08750A'><b>ADDRESS FOUND | Credits: {} | Debits: {} | Rewards: {} |".format(myxtions[0],myxtions[1],myxtions[2])
+				extext = extext + " Fees: {} | BALANCE: {}</b></p>".format(myxtions[3],myxtions[4])
+			else:
+				extext = "<p style='color:#08750A'><b>ALIAS: {}</b></p>\n".format(myxtions[8])
+				extext = extext + "<p style='color:#08750A'><b>ADDRESS FOUND | Credits: {} | Debits: {} | Rewards: {} |".format(myxtions[0],myxtions[1],myxtions[2])
+				extext = extext + " Fees: {} | BALANCE: {}</b></p>".format(myxtions[3],myxtions[4])
 			
 			conn = sqlite3.connect(bis_root)
 			c = conn.cursor()
@@ -1416,7 +1466,7 @@ def ledger_query():
 	replot.append('<td><b>Fee</b></td>\n')
 	replot.append('<td><b>Reward</b></td>\n')
 	replot.append('<td><b>Operation</b></td>\n')
-	replot.append('<td><b>Openfield</b></td>\n')
+	replot.append('<td><b>Message Starts</b></td>\n')
 	replot.append('</tr>\n')
 	replot = replot + view
 	replot.append('</table>\n')

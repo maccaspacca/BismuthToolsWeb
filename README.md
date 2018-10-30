@@ -78,6 +78,11 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 Changes
 =======
 
+Version 6.2.2 30/10/2018
+------------------------
+
+1. Query performance fixes for txid
+
 Version 6.2.1 25/10/2018
 ------------------------
 
