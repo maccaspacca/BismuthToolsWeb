@@ -29,7 +29,7 @@ table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-w
 <meta property="og:locale" content="en_US" />
 <meta property="xbm:version" content="201" />
 <meta name="description" content="Bismuth Cryptocurrency tools with block explorer, blockchain query, miner information and richlist" />
-<title>Bismuth Tools Web v6.2.2</title>
+<title>Bismuth Tools Web v6.2.3</title>
 </head>
 <body background="static/explorer_bg.png">
 <center>
@@ -113,26 +113,32 @@ table, th, td {border: 1px solid black;border-collapse: collapse;padding: 5px;-w
 <tr bgcolor="#E8E8E8">
 <td>txid</td>
 <td>Transaction ID</td>
-<td><p>Gets the details for a Bismuth transaction</p>
+<td><p>Gets the details for a Bismuth transaction id</p>
 <p><i>Note: replace any forward slashes with a period or full stop</i></p></td>
 </tr>
 <tr bgcolor="white">
+<td>txidadd</td>
+<td>Transaction ID=From Address</td>
+<td><p>Gets the details for a Bismuth transaction id but can be faster for older transactions.</p>
+<p><i>Note: replace any forward slashes with a period or full stop</i></p></td>
+</tr>
+<tr bgcolor="#E8E8E8">
 <td>richlist</td>
 <td>Input a number or the word all</td>
 <td>Gets a list of top Bismuth wallets to the number specified (or all) sorted by wallet balance</td>
 </tr>
-<tr bgcolor="#E8E8E8">
+<tr bgcolor="white">
 <td>miners</td>
 <td>Input a number or the word all</td>
 <td>Gets a list of the top Bismuth miners to the number specified (or all) sorted by blocks found</td>
 </tr>
-<tr bgcolor="white">
+<tr bgcolor="#E8E8E8">
 <td>aminer</td>
 <td>Miner address</td>
 <td><p>Gets more information about a specific Bismuth miner</p>
 <p>Insert a: and a valid alias as an alternative</p></td>
 </tr>
-<tr bgcolor="#E8E8E8">
+<tr bgcolor="white">
 <td>diffhist</td>
 <td>Input a number of blocks, greater than 10</td>
 <td>Gets the difficulty history for a specific number of previous blocks</td>

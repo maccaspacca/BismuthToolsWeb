@@ -1,6 +1,6 @@
 # Bismuth Tools Web
-# Version 6.2.2
-# Date 30/10/2018
+# Version 6.2.3
+# Date 09/11/2018
 # Copyright Maccaspacca 2017, 2018
 # Copyright Hclivess 2016 to 2018
 # Author Maccaspacca
@@ -922,7 +922,7 @@ def rev_alias(tocheck):
 	return str(r_addy)
 	
 	
-def get_the_details(getdetail):
+def get_the_details(getdetail, get_addy):
 
 	m_stuff = "{}%".format(str(getdetail))
 	
@@ -931,6 +931,7 @@ def get_the_details(getdetail):
 		conn = sqlite3.connect(hyper_root)
 		conn.text_factory = str
 		c = conn.cursor()
+		c.execute("PRAGMA case_sensitive_like=OFF;")
 		c.execute("SELECT * FROM transactions WHERE signature LIKE ?;", (m_stuff,))
 		m_detail = c.fetchone()
 		#print(m_detail)
@@ -939,19 +940,36 @@ def get_the_details(getdetail):
 		
 		if not m_detail:
 		
-			conn = sqlite3.connect(bis_root)
-			conn.text_factory = str
-			c = conn.cursor()
-			c.execute("SELECT * FROM transactions WHERE signature LIKE ?;", (m_stuff,))
-			m_detail = c.fetchone()
-			#print(m_detail)
-			c.close()
-			conn.close()
-	
+			if get_addy:
+		
+				conn = sqlite3.connect(bis_root)
+				conn.text_factory = str
+				c = conn.cursor()
+				c.execute("SELECT * FROM transactions WHERE address = ?;", (get_addy,))
+				t_detail = c.fetchall()
+				c.close()
+				conn.close()
+
+				x_detail = [sig for sig in t_detail if getdetail in sig[5]]
+				
+				m_detail = x_detail[0]
+				
+			else:
+				conn = sqlite3.connect(bis_root)
+				conn.text_factory = str
+				c = conn.cursor()
+				c.execute("PRAGMA case_sensitive_like=OFF;")
+				c.execute("SELECT * FROM transactions WHERE signature LIKE ?;", (m_stuff,))
+				m_detail = c.fetchone()
+				#print(m_detail)
+				c.close()
+				conn.close()				
+
 	else:
 		conn = sqlite3.connect(bis_root)
 		conn.text_factory = str
 		c = conn.cursor()
+		c.execute("PRAGMA case_sensitive_like=OFF;")
 		c.execute("SELECT * FROM transactions WHERE signature LIKE ?;", (m_stuff,))
 		m_detail = c.fetchone()
 		#print(m_detail)
@@ -1058,7 +1076,7 @@ def home():
 						
 		det_str = str(x[5][:56])
 		det_str = det_str.replace("+","%2B")
-		det_link = "/details?mydetail={}".format(det_str)
+		det_link = "/details?mydetail={}&myaddress={}".format(det_str,str(x[2]))
 		thisview.append('<tr bgcolor ="{}">'.format(color_cell))
 		if x[0] < 0:
 			thisview.append('<td>{}</td>'.format(str(x[0])))
@@ -1248,6 +1266,7 @@ def ledger_form():
 	plotter.append('<form method="post" action="/ledgerquery">\n')
 	plotter.append('<table>\n')
 	plotter.append('<tr><th><label for="block">Enter a Block number, txid, hash, address or a: followed by alias</label></th><td><input type="text" id="block" name="block" size="68"/></td></tr>\n')
+	plotter.append('<tr><th><label for="extra">Speed up older txid queries with a from Address (optional)</label></th><td><input type="text" id="extra" name="extra" size="68"/></td></tr>\n')
 	plotter.append('<tr><th><label for="sdate">Start Date (optional)</label></th><td><input type="date" id="sdate" name="sdate" size="68"/> 00:00:00 hrs</td></tr>\n')
 	plotter.append('<tr><th><label for="fdate">End Date (optional)</label></th><td><input type="date" id="fdate" name="fdate" size="68"/> 23:59:59 hrs</td></tr>\n')
 	plotter.append('<tr><th><label for="Submit Query">Click Submit to List Transactions</label></th><td><button id="Submit Query" name="Submit Query">Submit Query</button></td></tr>\n')
@@ -1274,6 +1293,14 @@ def ledger_query():
 	myblock = request.form.get('block')
 	xdate = request.form.get('sdate')
 	ydate = request.form.get('fdate')
+	f_addy = request.form.get('extra')
+	
+	f_addy = f_addy.strip()
+	
+	if not f_addy:
+		f_addy = "0"
+	if not test(f_addy) == 1:
+		f_addy = None
 
 	if xdate:
 		l_date = float(calendar.timegm(time.strptime(xdate, '%Y-%m-%d')))
@@ -1294,7 +1321,7 @@ def ledger_query():
 	
 	if not myblock:
 		myblock = "0"
-	
+		
 	myblock = myblock.strip()
 	
 	if "f:" in myblock:
@@ -1356,20 +1383,24 @@ def ledger_query():
 			conn.close()
 		
 			if not all:
-			
-				conn = sqlite3.connect(bis_root)
-				c = conn.cursor()
-				c.execute("SELECT * FROM transactions WHERE instr(signature, ?) > 0;",(str(myblock),))
-
-				all = c.fetchall()
 				
-				c.close()
-				conn.close()
+				
+			
+				#conn = sqlite3.connect(bis_root)
+				#c = conn.cursor()
+				#c.execute("SELECT * FROM transactions WHERE instr(signature, ?) > 0;",(str(myblock),))
+
+				#all = c.fetchall()
+				
+				#c.close()
+				#conn.close()
+				
+				all = [get_the_details(str(myblock),f_addy)]
 				
 			if not all:				
 				extext = "<p style='color:#C70039'>Nothing found for the address, txid or hash you entered - perhaps there has never been any transactions made?</p>"
 			else:
-				extext = "<p>Transaction found for ID given</p>"
+				extext = "<p>Transaction found for the txid you entered</p>"
 	
 	if my_type == 2:
 	
@@ -1420,7 +1451,7 @@ def ledger_query():
 		
 		det_str = str(x[5][:56])
 		det_str = det_str.replace("+","%2B")
-		det_link = "/details?mydetail={}".format(det_str)
+		det_link = "/details?mydetail={}&myaddress={}".format(det_str,str(x[2]))
 		view.append('<tr bgcolor ="{}">'.format(color_cell))
 
 		if x[0] < 0:
@@ -1446,6 +1477,7 @@ def ledger_query():
 	replot.append('<form method="post" action="/ledgerquery">\n')
 	replot.append('<table>\n')
 	replot.append('<tr><th><label for="block">Enter a Block number, txid, hash, address or a: followed by alias</label></th><td><input type="text" id="block" name="block" value="{}" size="68"/></td></tr>\n'.format(r_block))
+	replot.append('<tr><th><label for="extra">Speed up older txid queries with a from Address (optional)</label></th><td><input type="text" id="extra" name="extra" size="68"/></td></tr>\n')
 	replot.append('<tr><th><label for="sdate">Start Date (optional)</label></th><td><input type="date" id="sdate" name="sdate" value="{}" size="68"/> 00:00:00 hrs</td></tr>\n'.format(xdate))
 	replot.append('<tr><th><label for="fdate">End Date (optional)</label></th><td><input type="date" id="fdate" name="fdate" value="{}" size="68"/> 23:59:59 hrs</td></tr>\n'.format(ydate))
 	replot.append('<tr><th><label for="Submit Query">Click Submit to List Transactions</label></th><td><button id="Submit Query" name="Submit Query">Submit Query</button></td></tr>\n')
@@ -1682,12 +1714,16 @@ def detailinfo():
 		getdetail = request.args.get('mydetail')
 	except:
 		getdetail = None
+	try:
+		get_addy = request.args.get('myaddress')
+	except:
+		get_addy = None
 		
 	#print(getdetail)
 
 	if getdetail:
 	
-		m_detail = get_the_details(getdetail)
+		m_detail = get_the_details(getdetail,get_addy)
 	
 		if m_detail:
 		
@@ -2030,11 +2066,37 @@ def handler(param1, param2):
 			
 			gettxid = gettxid.replace(".","/")
 		
-			m_stuff = "{}%".format(str(gettxid))
+			m_stuff = "{}".format(str(gettxid))
 			
-			m_detail = get_the_details(m_stuff)
+			m_detail = get_the_details(m_stuff,None)
 	
 			
+			if m_detail:
+			
+				y = []
+				y.append({"block":str(m_detail[0]),"timestamp":str(time.strftime("%Y/%m/%d,%H:%M:%S", time.gmtime(float(m_detail[1])))),"from":str(m_detail[2]),"to":str(m_detail[3]),"amount":str(m_detail[4]),"signature":str(m_detail[5]),"txid":str(m_detail[5][:56]),"pubkey":str(m_detail[6]),"hash":str(m_detail[7]),"fee":str(m_detail[8]),"reward":str(m_detail[9]),"operation":str(m_detail[10]),"openfield":str(m_detail[11])})
+				
+				return json.dumps(y), 200, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+				
+			else:
+				
+				r = "txid does not appear to exist or invalid data"
+				e = {"error":r}
+				return json.dumps(e), 404, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+				
+	elif param1 == "txidadd":
+			gettxid = str(param2)
+		
+			tx_add_info = gettxid.split("=")
+			get_txid = tx_add_info[0]
+			get_add_from = tx_add_info[1]
+						
+			get_txid = get_txid.replace(".","/")
+		
+			m_stuff = "{}".format(str(get_txid))
+			
+			m_detail = get_the_details(m_stuff,get_add_from)
+				
 			if m_detail:
 			
 				y = []
