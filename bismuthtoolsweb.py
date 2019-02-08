@@ -1,8 +1,7 @@
 # Bismuth Tools Web
-# Version 6.2.3
-# Date 09/11/2018
-# Copyright Maccaspacca 2017, 2018
-# Copyright Hclivess 2016 to 2018
+# Version 6.2.4
+# Date 08/02/2019
+# Copyright The Bismuth Foundation 2016 to 2019
 # Author Maccaspacca
 
 from tornado.wsgi import WSGIContainer
@@ -141,7 +140,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 		self.callback.start()
 
 	def send_values(self):
-		#Generates random values to send via websocket
+		
 		self.thismessage = self.mpgetjson()
 
 		for response in self.thismessage:
@@ -202,11 +201,17 @@ def get_cmc_info(alt_curr):
 		r = requests.get(t)
 		x = r.text
 		y = json.loads(x)
-		c_btc = y[0]['price_btc']
-		c_usd = "{:.2f}".format(float(y[0]['price_usd']))
-		c_cus = "{:.2f}".format(float(y[0][ch]))
-		#print( y )
-		s = "<p><b> LATEST PRICES: BTC = {} | USD = {} | {} = {}</b></p>".format(c_btc,str(c_usd),alt_curr,str(c_cus))
+		try:
+			c_btc = y[0]['price_btc']
+			c_usd = "{:.2f}".format(float(y[0]['price_usd']))
+			c_cus = "{:.2f}".format(float(y[0][ch]))
+			#print( y )
+			s = "<p><b> LATEST PRICES: BTC = {} | USD = {} | {} = {}</b></p>".format(c_btc,str(c_usd),alt_curr,str(c_cus))
+		except:
+			c_btc = ""
+			c_usd = ""
+			c_cus = ""
+			s = "<p><b></b></p>"
 		
 	except requests.exceptions.RequestException as e:
 		s = "<p><b>Price Error: {}</b></p>".format(e)
@@ -222,7 +227,10 @@ def get_cmc_val(alt_curr):
 		r = requests.get(t)
 		x = r.text
 		y = json.loads(x)
-		s = float(y[0][ch])
+		try:
+			s = float(y[0][ch])
+		except:
+			s = 0.00000001
 		
 	except:
 		s = 0.00000001
@@ -262,7 +270,7 @@ def status_me():
 		connections.send(s, "statusjson", 10)
 		status_resp = connections.receive(s, 10)
 		# Node status
-		
+				
 		try:
 			w_version = status_resp['walletversion']
 			p_version = status_resp['protocolversion']
@@ -643,11 +651,14 @@ def getcirc():
 	allcirc = "{:.8f}".format(allcirc)
 
 	c.close()
-	conn.close()	
+	conn.close()
+	
+	print(allcirc)
 	
 	return allcirc
 	
 def updatedb():
+	x = status_me()
 
 	print("Updating database.....wait")
 	

@@ -78,6 +78,11 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 Changes
 =======
 
+Version 6.2.4 08/02/2019
+------------------------
+
+1. Temporary fix for Coinmarketcap.com statistics being unavailable
+
 Version 6.2.3 09/11/2018
 ------------------------
 
