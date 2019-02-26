@@ -202,7 +202,7 @@ def get_cmc_info(alt_curr):
 		x = r.text
 		y = json.loads(x)
 		try:
-			c_btc = y['market_data']['current_price']['btc']
+			c_btc = "{:.8f}".format(float(y['market_data']['current_price']['btc']))
 			c_usd = "{:.3f}".format(float(y['market_data']['current_price']['usd']))
 			c_cus = "{:.3f}".format(float(y['market_data']['current_price'][ch]))
 			#print( y )
