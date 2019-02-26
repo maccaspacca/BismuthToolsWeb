@@ -1,6 +1,6 @@
 # Bismuth Tools Web
-# Version 6.2.4
-# Date 08/02/2019
+# Version 6.2.5
+# Date 26/02/2019
 # Copyright The Bismuth Foundation 2016 to 2019
 # Author Maccaspacca
 
@@ -68,7 +68,7 @@ except:
 try:
 	topia = config.get('My Bismuth', 'cryptopia')
 except:
-	topia = "edf2d63cdf0b6275ead22c9e6d66aa8ea31dc0ccb367fad2e7c08a25" # cryptopia address
+	topia = "8b447aa5845a2b6900589255b7d811a0a40db06b9133dcf9569cdfa0" # cryptopia address
 try:
 	diff_ch = int(config.get('My Charts', 'diff'))
 except:
@@ -194,17 +194,17 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
 def get_cmc_info(alt_curr):
 
-	ch = "price_{}".format(alt_curr.lower())
+	ch = alt_curr.lower()
 
 	try:
-		t = "https://api.coinmarketcap.com/v1/ticker/bismuth/?convert={}".format(alt_curr)
+		t = "https://api.coingecko.com/api/v3/coins/bismuth?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false"
 		r = requests.get(t)
 		x = r.text
 		y = json.loads(x)
 		try:
-			c_btc = y[0]['price_btc']
-			c_usd = "{:.2f}".format(float(y[0]['price_usd']))
-			c_cus = "{:.2f}".format(float(y[0][ch]))
+			c_btc = y['market_data']['current_price']['btc']
+			c_usd = "{:.3f}".format(float(y['market_data']['current_price']['usd']))
+			c_cus = "{:.3f}".format(float(y['market_data']['current_price'][ch]))
 			#print( y )
 			s = "<p><b> LATEST PRICES: BTC = {} | USD = {} | {} = {}</b></p>".format(c_btc,str(c_usd),alt_curr,str(c_cus))
 		except:
@@ -220,15 +220,15 @@ def get_cmc_info(alt_curr):
 	
 def get_cmc_val(alt_curr):
 
-	ch = "price_{}".format(alt_curr.lower())
+	ch = alt_curr.lower()
 
 	try:
-		t = "https://api.coinmarketcap.com/v1/ticker/bismuth/?convert={}".format(alt_curr)
+		t = "https://api.coingecko.com/api/v3/coins/bismuth?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false"
 		r = requests.get(t)
 		x = r.text
 		y = json.loads(x)
 		try:
-			s = float(y[0][ch])
+			s = float(y['market_data']['current_price'][ch])
 		except:
 			s = 0.00000001
 		
