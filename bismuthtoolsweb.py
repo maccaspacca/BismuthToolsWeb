@@ -1129,7 +1129,7 @@ def home():
 	initial.append('{}'.format(cmcstats))
 	initial.append('</td></tr>\n')
 	initial.append('<tr><td colspan="3" align="center" style="border:hidden;">\n')
-	initial.append('Price information courtesy of coinmarketcap.com</td>\n')
+	initial.append('Price information courtesy of CoinGecko</td>\n')
 	initial.append('</tr></tbody></table>\n')
 	initial.append('<table style="font-size: 76%">\n')
 	initial.append('<tr>\n')
