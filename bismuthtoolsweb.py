@@ -478,7 +478,7 @@ def checkalias(myaddress):
 					
 	if myaddress == "4edadac9093d9326ee4b17f869b14f1a2534f96f9c5d7b48dc9acaed":
 		goodname = "Test and Development Fund"
-	if myaddress == "edf2d63cdf0b6275ead22c9e6d66aa8ea31dc0ccb367fad2e7c08a25":
+	if myaddress == "8b447aa5845a2b6900589255b7d811a0a40db06b9133dcf9569cdfa0":
 		goodname = "Cryptopia Exchange"
 
 	#app_log.info("Tools DB: Check alias result: Address {} = {}".format(str(myaddress),goodname))
