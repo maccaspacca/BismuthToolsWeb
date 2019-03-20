@@ -78,6 +78,11 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 Changes
 =======
 
+Version 6.2.6 20/03/2019
+------------------------
+
+1. Fix for server error in ledger query for unused address
+
 Version 6.2.5 26/02/2019
 ------------------------
 

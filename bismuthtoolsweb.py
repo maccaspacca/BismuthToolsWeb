@@ -1,6 +1,6 @@
 # Bismuth Tools Web
-# Version 6.2.5
-# Date 26/02/2019
+# Version 6.2.6
+# Date 20/03/2019
 # Copyright The Bismuth Foundation 2016 to 2019
 # Author Maccaspacca
 
@@ -1408,7 +1408,7 @@ def ledger_query():
 				
 				all = [get_the_details(str(myblock),f_addy)]
 				
-			if not all:				
+			if not all[0]:				
 				extext = "<p style='color:#C70039'>Nothing found for the address, txid or hash you entered - perhaps there has never been any transactions made?</p>"
 			else:
 				extext = "<p>Transaction found for the txid you entered</p>"
@@ -1447,39 +1447,42 @@ def ledger_query():
 				extext = extext + "<td style='border:hidden;'><p></p></td>\n"
 			extext = extext + "</tr></table></form>\n"
 	
-	view = []
-	i = 0
-	for x in all:
-		if i % 2 == 0:
-			color_cell = "#E8E8E8"
-		else:
-			color_cell = "white"
+	if not all[0]:
+		view = []
+	else:
+		view = []
+		i = 0
+		for x in all:
+			if i % 2 == 0:
+				color_cell = "#E8E8E8"
+			else:
+				color_cell = "white"
+				
+			if bool(BeautifulSoup(str(x[11]),"html.parser").find()):
+				x_open = "HTML NOT SHOWN HERE"
+			else:
+				x_open = str(x[11][:20])
 			
-		if bool(BeautifulSoup(str(x[11]),"html.parser").find()):
-			x_open = "HTML NOT SHOWN HERE"
-		else:
-			x_open = str(x[11][:20])
-		
-		det_str = str(x[5][:56])
-		det_str = det_str.replace("+","%2B")
-		det_link = "/details?mydetail={}&myaddress={}".format(det_str,str(x[2]))
-		view.append('<tr bgcolor ="{}">'.format(color_cell))
+			det_str = str(x[5][:56])
+			det_str = det_str.replace("+","%2B")
+			det_link = "/details?mydetail={}&myaddress={}".format(det_str,str(x[2]))
+			view.append('<tr bgcolor ="{}">'.format(color_cell))
 
-		if x[0] < 0:
-			view.append('<td>{}</td>'.format(str(x[0])))
-		else:
-			view.append('<td><a href="{}">{}</a></td>'.format(det_link,str(x[0])))
-		view.append('<td>{}'.format(str(time.strftime("%Y/%m/%d,%H:%M:%S", time.gmtime(float(x[1]))))))
-		view.append('<td>{}</td>'.format(str(x[2])))
-		view.append('<td>{}</td>'.format(str(x[3])))
-		view.append('<td>{}</td>'.format(str(x[4])))
-		view.append('<td>{}</td>'.format(str(x[5][:56])))
-		view.append('<td>{}</td>'.format(str(x[8])))
-		view.append('<td>{}</td>'.format(str(x[9])))
-		view.append('<td>{}</td>'.format(str(x[10])))
-		view.append('<td>{}</td>'.format(x_open))
-		view.append('</tr>\n')
-		i = i+1
+			if x[0] < 0:
+				view.append('<td>{}</td>'.format(str(x[0])))
+			else:
+				view.append('<td><a href="{}">{}</a></td>'.format(det_link,str(x[0])))
+			view.append('<td>{}'.format(str(time.strftime("%Y/%m/%d,%H:%M:%S", time.gmtime(float(x[1]))))))
+			view.append('<td>{}</td>'.format(str(x[2])))
+			view.append('<td>{}</td>'.format(str(x[3])))
+			view.append('<td>{}</td>'.format(str(x[4])))
+			view.append('<td>{}</td>'.format(str(x[5][:56])))
+			view.append('<td>{}</td>'.format(str(x[8])))
+			view.append('<td>{}</td>'.format(str(x[9])))
+			view.append('<td>{}</td>'.format(str(x[10])))
+			view.append('<td>{}</td>'.format(x_open))
+			view.append('</tr>\n')
+			i = i+1
 
 	replot = []
 	
@@ -1785,6 +1788,118 @@ def detailinfo():
 		d_open = ""
 	
 	return render_template('detail.html', ablock=d_block, atime=d_time, afrom=d_from, ato=d_to, aamount=d_amount, asig=d_sig, atxid=d_txid, apub=d_pub, ahash=d_hash, afee=d_fee, areward=d_reward, aoperation=d_operation, aopen=d_open)
+	
+
+@app.route('/geturl', methods=['GET'])
+def url_form():
+		
+	plotter = []
+	
+	plotter.append('<h2>Bismuth Payment URL Creation Tool</h2>\n')
+	plotter.append('<p><b>Creates a Bismuth payment URL</b></p>\n')
+	plotter.append('<p>For importing into a Bismuth wallet or sending to someone</p>\n')
+	plotter.append('<form method="post" action="/geturl">\n')
+	plotter.append('<table>\n')
+	plotter.append('<tr><th><label for="address">Receiving address</label></th><td><input type="text" id="address" name="address" size="68"/></td></tr>\n')
+	plotter.append('<tr><th><label for="amount">Amount</label></th><td><input type="text" id="amount" name="amount" size="50"/><b> BIS</b></td></tr>\n')
+	plotter.append('<tr><th><label for="operation">Operation text (optional)</label></th><td><input type="text" id="operation" name="operation" size="50"/> 30 Chars. max.</td></tr>\n')
+	plotter.append('<tr><th><label for="message">Message text (optional)</label></th><td><textarea name="message" id="message" rows="10" cols="51"></textarea></td></tr>\n')
+	plotter.append('<tr><th><label for="Submit Query">Click Submit to create payment URL</label></th><td><b><button id="Submit Query" name="Submit Query">Submit</button></b></td></tr>\n')
+	plotter.append('</table>\n')
+	plotter.append('</form>\n')
+	#plotter.append('</p>\n')
+	plotter.append('<p></p>\n')
+
+	starter = "" + str(''.join(plotter))
+	
+	return render_template('base.html', starter=starter)
+	
+@app.route('/geturl', methods=['POST'])
+def url_gen():
+
+	my_add = request.form.get('address')
+	my_amount = request.form.get('amount')
+	my_op = request.form.get('operation')
+	my_mess = request.form.get('message')
+	
+	is_ok = True
+	do_qr = True
+	
+	if not my_add:
+		is_ok = False
+		my_r = "No recipient entered"
+	else:
+		my_add = my_add.strip()
+		if test(my_add) == 3:
+			is_ok = False
+			my_r = "Bad address entered"
+	
+	try:		
+		amdo = Decimal(my_amount)
+	except:
+		is_ok = False
+		my_r = "Invalid Bismuth amount entered"
+
+	if not my_op:
+		my_op = "0"
+	if len(my_op) > 30:
+		is_ok = False
+		my_r = "Operation text over 30 Characters"
+		
+	if not my_mess:
+		my_mess = ""
+		
+	if len(my_mess) > 100000:
+		is_ok = False
+		my_r = "Message text too big"
+		
+	if len(my_mess) > 250:
+		do_qr = False
+	
+	if is_ok:
+		receive_str = bisurl.create_url(app_log, "pay", my_add, my_amount, my_op, my_mess)
+		clr_str = '<p style="color:green">'
+		if do_qr:
+			receive_qr = pyqrcode.create(receive_str)
+			receive_qr_png = receive_qr.png('static/qr_{}{}.png'.format(my_add, my_amount), scale=2)
+		else:
+			receive_qr_png = ''
+	else:
+		receive_str = my_r
+		clr_str = '<p style="color:red">'
+
+	if not is_ok:
+		do_qr = False
+
+	print(receive_str)
+		
+	plotter = []
+	
+	plotter.append('<h2>Bismuth Payment URL Creation Tool</h2>\n')
+	plotter.append('<p><b>Creates a Bismuth payment URL</b></p>\n')
+	plotter.append('<p>Can be imported into Bismuth wallets or sent to someone else</p>\n')
+	plotter.append('<form method="post" action="/geturl">\n')
+	plotter.append('<table>\n')
+	plotter.append('<tr><th><label for="address">Receiving address</label></th><td><input type="text" id="address" name="address" size="68"/></td></tr>\n')
+	plotter.append('<tr><th><label for="amount">Amount</label></th><td><input type="text" id="amount" name="amount" size="50"/><b> BIS</b></td></tr>\n')
+	plotter.append('<tr><th><label for="operation">Operation text (optional)</label></th><td><input type="text" id="operation" name="operation" size="50"/> 30 Chars. max.</td></tr>\n')
+	plotter.append('<tr><th><label for="message">Message text (optional)</label></th><td><textarea name="message" id="message" rows="10" cols="51"></textarea></td></tr>\n')
+	plotter.append('<tr><th><label for="Submit Query">Click Submit to create payment URL</label></th><td><b><button id="Submit Query" name="Submit Query">Submit</button></b></td></tr>\n')
+	plotter.append('</table>\n')
+	plotter.append('</form>\n')
+	#plotter.append('</p>\n')
+	plotter.append('<p></p>\n')
+	plotter.append('<table>\n')
+	plotter.append('<tr><th>RESULT</th></tr>\n')
+	plotter.append('<tr><td><p></p>{}{}</p><p></p></td></tr>\n'.format(clr_str,receive_str))
+	if do_qr:
+		plotter.append('<tr><td align="center"><img src="static/qr_{}{}.png" height="175px"></img></td></tr>\n'.format(my_add, my_amount))
+	plotter.append('</table>\n')	
+	plotter.append('<p></p>\n')
+
+	starter = "" + str(''.join(plotter))
+	
+	return render_template('base.html', starter=starter)
 
 	
 @app.route('/realmem')
