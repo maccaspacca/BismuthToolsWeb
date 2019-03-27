@@ -1,6 +1,6 @@
 # Bismuth Tools Web
-# Version 6.2.6
-# Date 20/03/2019
+# Version 6.2.7
+# Date 27/03/2019
 # Copyright The Bismuth Foundation 2016 to 2019
 # Author Maccaspacca
 
@@ -872,6 +872,13 @@ def s_test(testString):
 				return True
 	else:
 		return False
+		
+def d_test(testString):
+
+	if len(testString) == 56:
+			return True
+	else:
+		return False
 
 def miners():
 
@@ -962,8 +969,10 @@ def get_the_details(getdetail, get_addy):
 				conn.close()
 
 				x_detail = [sig for sig in t_detail if getdetail in sig[5]]
-				
-				m_detail = x_detail[0]
+				try:
+					m_detail = x_detail[0]
+				except:
+					m_detail = None
 				
 			else:
 				conn = sqlite3.connect(bis_root)
@@ -1447,7 +1456,9 @@ def ledger_query():
 				extext = extext + "<td style='border:hidden;'><p></p></td>\n"
 			extext = extext + "</tr></table></form>\n"
 	
-	if not all[0]:
+	if not all:
+		view = []
+	elif not all[0]:
 		view = []
 	else:
 		view = []
@@ -1733,7 +1744,11 @@ def detailinfo():
 	except:
 		get_addy = None
 		
-	#print(getdetail)
+	if not s_test(get_addy):
+		get_addy = None
+
+	if not d_test(getdetail):
+		getdetail = None
 
 	if getdetail:
 	
@@ -2082,21 +2097,28 @@ def handler(param1, param2):
 		
 			m_stuff = "{}".format(str(gettxid))
 			
-			m_detail = get_the_details(m_stuff,None)
-	
+			if not d_test(get_txid):
 			
-			if m_detail:
-			
-				y = []
-				y.append({"block":str(m_detail[0]),"timestamp":str(time.strftime("%Y/%m/%d,%H:%M:%S", time.gmtime(float(m_detail[1])))),"from":str(m_detail[2]),"to":str(m_detail[3]),"amount":str(m_detail[4]),"signature":str(m_detail[5]),"txid":str(m_detail[5][:56]),"pubkey":str(m_detail[6]),"hash":str(m_detail[7]),"fee":str(m_detail[8]),"reward":str(m_detail[9]),"operation":str(m_detail[10]),"openfield":str(m_detail[11])})
-				
-				return json.dumps(y), 200, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
-				
-			else:
-				
 				r = "txid does not appear to exist or invalid data"
 				e = {"error":r}
 				return json.dumps(e), 404, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+
+			else:
+			
+				m_detail = get_the_details(m_stuff,None)
+			
+				if m_detail:
+				
+					y = []
+					y.append({"block":str(m_detail[0]),"timestamp":str(time.strftime("%Y/%m/%d,%H:%M:%S", time.gmtime(float(m_detail[1])))),"from":str(m_detail[2]),"to":str(m_detail[3]),"amount":str(m_detail[4]),"signature":str(m_detail[5]),"txid":str(m_detail[5][:56]),"pubkey":str(m_detail[6]),"hash":str(m_detail[7]),"fee":str(m_detail[8]),"reward":str(m_detail[9]),"operation":str(m_detail[10]),"openfield":str(m_detail[11])})
+					
+					return json.dumps(y), 200, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+					
+				else:
+					
+					r = "txid does not appear to exist or invalid data"
+					e = {"error":r}
+					return json.dumps(e), 404, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
 				
 	elif param1 == "txidadd":
 			gettxid = str(param2)
@@ -2109,20 +2131,28 @@ def handler(param1, param2):
 		
 			m_stuff = "{}".format(str(get_txid))
 			
-			m_detail = get_the_details(m_stuff,get_add_from)
-				
-			if m_detail:
+			if not d_test(get_txid):
 			
-				y = []
-				y.append({"block":str(m_detail[0]),"timestamp":str(time.strftime("%Y/%m/%d,%H:%M:%S", time.gmtime(float(m_detail[1])))),"from":str(m_detail[2]),"to":str(m_detail[3]),"amount":str(m_detail[4]),"signature":str(m_detail[5]),"txid":str(m_detail[5][:56]),"pubkey":str(m_detail[6]),"hash":str(m_detail[7]),"fee":str(m_detail[8]),"reward":str(m_detail[9]),"operation":str(m_detail[10]),"openfield":str(m_detail[11])})
-				
-				return json.dumps(y), 200, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
-				
-			else:
-				
 				r = "txid does not appear to exist or invalid data"
 				e = {"error":r}
 				return json.dumps(e), 404, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+			
+			else:
+			
+				m_detail = get_the_details(m_stuff,get_add_from)
+					
+				if m_detail:
+				
+					y = []
+					y.append({"block":str(m_detail[0]),"timestamp":str(time.strftime("%Y/%m/%d,%H:%M:%S", time.gmtime(float(m_detail[1])))),"from":str(m_detail[2]),"to":str(m_detail[3]),"amount":str(m_detail[4]),"signature":str(m_detail[5]),"txid":str(m_detail[5][:56]),"pubkey":str(m_detail[6]),"hash":str(m_detail[7]),"fee":str(m_detail[8]),"reward":str(m_detail[9]),"operation":str(m_detail[10]),"openfield":str(m_detail[11])})
+					
+					return json.dumps(y), 200, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
+					
+				else:
+					
+					r = "txid does not appear to exist or invalid data"
+					e = {"error":r}
+					return json.dumps(e), 404, {'Content-Type': 'application/json', 'Cache-Control': 'no-cache'}
 				
 	elif param1 == "richlist":
 		rich_num = str(param2)

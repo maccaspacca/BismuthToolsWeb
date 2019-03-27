@@ -78,6 +78,11 @@ There are two sponsor spots on the main web landing page of the tools and a spon
 Changes
 =======
 
+Version 6.2.7 27/03/2019
+------------------------
+
+1. Fix for malformed detail queries
+
 Version 6.2.6 20/03/2019
 ------------------------
 
