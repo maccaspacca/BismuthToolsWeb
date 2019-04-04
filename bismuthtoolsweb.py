@@ -1,6 +1,6 @@
 # Bismuth Tools Web
-# Version 6.2.7
-# Date 27/03/2019
+# Version 6.2.8
+# Date 04/04/2019
 # Copyright The Bismuth Foundation 2016 to 2019
 # Author Maccaspacca
 
@@ -876,6 +876,9 @@ def s_test(testString):
 def d_test(testString):
 
 	if len(testString) == 56:
+		if bool(BeautifulSoup(testString,"html.parser").find()):
+			return False
+		else:
 			return True
 	else:
 		return False
@@ -2097,7 +2100,7 @@ def handler(param1, param2):
 		
 			m_stuff = "{}".format(str(gettxid))
 			
-			if not d_test(get_txid):
+			if not d_test(gettxid):
 			
 				r = "txid does not appear to exist or invalid data"
 				e = {"error":r}
